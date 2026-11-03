@@ -1,0 +1,96 @@
+import { RoundedBox } from '@react-three/drei'
+import { COLOR_GROUPS, type TileKind } from '../config/board'
+import type { VisualConfig } from '../config/visual'
+import { useVisual } from '../store/visualStore'
+import type { TileTransform } from './boardLayout'
+import { BuildingSet } from './Buildings'
+import { Mat } from './Mat'
+import { TileProps } from './TileProps'
+
+function topColor(kind: TileKind, colors: VisualConfig['colors']): string {
+  switch (kind) {
+    case 'CITY':
+      return colors.tile
+    case 'START':
+      return colors.start
+    case 'ISLAND':
+      return colors.water
+    case 'FESTIVAL':
+      return colors.festival
+    case 'AIRPORT':
+      return colors.airport
+    case 'CHANCE':
+      return colors.chance
+    case 'TAX':
+      return colors.tax
+    case 'RESORT':
+      return colors.resort
+  }
+}
+
+export interface TileBuilding {
+  level: number
+  color: string
+}
+
+/**
+ * Một ô bàn cờ. Trục cục bộ: x dọc theo cạnh, z hướng ra ngoài bàn cờ.
+ * Dải màu nhóm nằm phía trong (gần bãi cỏ), công trình/trang trí ở phần còn lại.
+ */
+export function Tile({ layout, building }: { layout: TileTransform; building?: TileBuilding }) {
+  const { board, colors, props } = useVisual()
+  const { def, width, depth } = layout
+  const w = width - board.tileGap
+  const d = depth - board.tileGap
+  const groupColor = def.group ? COLOR_GROUPS.find((g) => g.id === def.group)?.color : undefined
+  const stripDepth = d * board.stripRatio
+  const top = board.tileHeight
+  // Tâm vùng đặt công trình: phần ô không có dải màu.
+  const contentZ = groupColor ? stripDepth / 2 : 0
+
+  return (
+    <group position={[layout.x, 0, layout.z]} rotation-y={layout.rotationY}>
+      <RoundedBox
+        args={[w, board.tileHeight, d]}
+        radius={board.tileRadius}
+        smoothness={board.tileSmoothness}
+        position={[0, board.tileHeight / 2, 0]}
+        castShadow
+        receiveShadow
+      >
+        <Mat color={layout.isCorner ? (def.kind === 'ISLAND' ? colors.water : colors.corner) : topColor(def.kind, colors)} />
+      </RoundedBox>
+
+      {layout.isCorner && (
+        <RoundedBox
+          args={[w * 0.86, board.stripHeight, d * 0.86]}
+          radius={Math.min(board.tileRadius, board.stripHeight / 2)}
+          smoothness={board.tileSmoothness}
+          position={[0, top + board.stripHeight / 2 - 0.005, 0]}
+          receiveShadow
+        >
+          <Mat color={topColor(def.kind, colors)} />
+        </RoundedBox>
+      )}
+
+      {groupColor && (
+        <RoundedBox
+          args={[w, board.stripHeight, stripDepth]}
+          radius={Math.min(board.tileRadius, board.stripHeight / 2)}
+          smoothness={board.tileSmoothness}
+          position={[0, top + board.stripHeight / 2 - 0.005, -d / 2 + stripDepth / 2]}
+          receiveShadow
+        >
+          <Mat color={groupColor} />
+        </RoundedBox>
+      )}
+
+      <group position={[0, top + (layout.isCorner ? board.stripHeight : 0), contentZ]}>
+        <group scale={props.scale}>
+          <TileProps kind={def.kind} />
+        </group>
+        {building && <BuildingSet level={building.level} color={building.color} width={w} />}
+      </group>
+    </group>
+  )
+}

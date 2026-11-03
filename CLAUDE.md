@@ -52,6 +52,15 @@ ui, scene  →  store  →  game-core  →  config
 - Các chỗ GDD chưa rõ đã được quyết định ở `docs/RULES-DECISIONS.md`. Đổi luật thì cập nhật file đó.
 - `npm run simulate -- --seed 42` chạy giả lập một ván và in log, dùng để kiểm tra luật bằng mắt.
 
+## Scene 3D
+
+- Mọi thông số hình ảnh (màu, đèn, camera, kích thước ô, độ bo, AO…) nằm ở `src/config/visual.ts`. Không hardcode số hình ảnh trong component. Thêm thông số mới vào đó thì bảng leva tự có thêm thanh trượt.
+- Component đọc thông số qua `useVisual()` (`src/store/visualStore.ts`), không import `VISUAL` trực tiếp, để bảng leva chỉnh được trực tiếp.
+- Bảng leva (`src/ui/dev/VisualTuner.tsx`) chỉ nạp khi `import.meta.env.DEV`, không vào bản build.
+- Canvas dùng `frameloop="demand"`: sửa trực tiếp object three (camera, light…) xong phải gọi `invalidate()`.
+- Bóng: `shadows="percentage"` (PCFShadowMap + `shadow.radius`). Three r180+ đã bỏ PCFSoftShadowMap.
+- Bố cục bàn cờ và khung camera là toán thuần ở `src/scene/boardLayout.ts` (có test).
+
 ## Quy ước code
 
 - TypeScript strict, không dùng `any` (dùng `unknown` + thu hẹp kiểu nếu cần).
