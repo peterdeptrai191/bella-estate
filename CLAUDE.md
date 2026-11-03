@@ -43,6 +43,15 @@ ui, scene  →  store  →  game-core  →  config
 5. **Không hardcode số kinh tế** trong code — lấy từ `src/config/economy.ts` (và dữ liệu bàn cờ trong `config/`).
 6. `src/game-core/architecture.test.ts` kiểm tra tự động quy tắc 1–2. Đừng sửa test này để lách luật.
 
+## game-core API
+
+- `createGame(players, seed)` → `GameState`. `applyAction(state, action)` → `{ state, events }`; action sai luật ném `GameRuleError`.
+- Mỗi action có `playerId`; chỉ người đang tới lượt được hành động. Lượt đi qua các bước `turn.step`: `ROLL` → `MOVE` → `ACT` → `END_TURN`. Việc bắt buộc (trả thuê, rút thẻ, trả nợ, Động Đất) nằm ở `turn.pending` và chặn `END_TURN`.
+- `events` là nguồn để UI chạy animation. Không suy luận animation bằng cách so sánh state.
+- `getLegalActions(state)` cho UI bật/tắt nút và cho bot. `getTimeoutAction(state)` dùng khi hết giờ lượt.
+- Các chỗ GDD chưa rõ đã được quyết định ở `docs/RULES-DECISIONS.md`. Đổi luật thì cập nhật file đó.
+- `npm run simulate -- --seed 42` chạy giả lập một ván và in log, dùng để kiểm tra luật bằng mắt.
+
 ## Quy ước code
 
 - TypeScript strict, không dùng `any` (dùng `unknown` + thu hẹp kiểu nếu cần).

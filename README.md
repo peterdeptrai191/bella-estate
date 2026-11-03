@@ -7,6 +7,7 @@ npm install
 npm run dev        # dev server
 npm test           # Vitest
 npm run typecheck
+npm run simulate -- --seed 42   # giả lập 1 ván 4 người, in log
 npm run build
 ```
 

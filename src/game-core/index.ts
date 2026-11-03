@@ -1,32 +1,42 @@
 /**
  * game-core: toàn bộ luật chơi, TypeScript thuần.
  * KHÔNG import React, Three.js, Zustand hay bất kỳ thứ gì phụ thuộc trình duyệt.
+ *
+ * Cách dùng:
+ *   let state = createGame([{ name: 'An' }, { name: 'Bot', isBot: true }], seed)
+ *   const { state: next, events } = applyAction(state, { type: 'ROLL_DICE', playerId: 'p1' })
  */
-import { ECONOMY } from '../config/economy'
-import type { GameState } from './types'
-
 export * from './types'
-
-export interface NewPlayer {
-  name: string
-  isBot?: boolean
-}
-
-export function createGame(players: NewPlayer[]): GameState {
-  if (players.length < 2 || players.length > 4) {
-    throw new Error('Cần 2–4 người chơi')
-  }
-  return {
-    phase: 'playing',
-    players: players.map((p, i) => ({
-      id: `p${i + 1}`,
-      name: p.name,
-      money: ECONOMY.startingMoney,
-      position: 0,
-      isBot: p.isBot ?? false,
-      bankrupt: false,
-    })),
-    currentPlayerIndex: 0,
-    round: 1,
-  }
-}
+export { createGame, MIN_PLAYERS, MAX_PLAYERS, type NewPlayer } from './game'
+export { applyAction } from './reducer'
+export { GameRuleError, currentPlayer } from './context'
+export { getLegalActions, getTimeoutAction, isLegal } from './legalActions'
+export { findInstantWinner } from './win'
+export { describeEvent, formatMoney } from './describe'
+export { nextRandom, seedToRngState } from './rng'
+export {
+  AIRPORT_INDEX,
+  CITY_INDICES,
+  FESTIVAL_INDEX,
+  ISLAND_INDEX,
+  LANDMARK_LEVEL,
+  RESORT_INDICES,
+  START_INDEX,
+  groupTiles,
+  isPurchasable,
+  sidePurchasableTiles,
+} from './board'
+export {
+  buildCost,
+  buyoutPrice,
+  completedGroups,
+  housesOwned,
+  investedValue,
+  liquidationValue,
+  netWorth,
+  ownedTiles,
+  rentFor,
+  sellValue,
+  standings,
+} from './valuation'
+export { isEarthquakeTarget } from './cards'
