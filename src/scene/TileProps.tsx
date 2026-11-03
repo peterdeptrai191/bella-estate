@@ -30,7 +30,7 @@ function PalmTree({ position, scale = 1 }: { position: [number, number, number];
 function Island() {
   const { colors } = useVisual()
   return (
-    <group>
+    <group position={[0.12, 0, 0.18]} scale={0.85}>
       <mesh position={[0, 0, 0]} scale={[1, 0.22, 1]} receiveShadow castShadow>
         <sphereGeometry args={[0.48, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <Mat color={colors.sand} />

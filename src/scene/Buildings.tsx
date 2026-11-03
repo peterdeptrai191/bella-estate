@@ -1,5 +1,7 @@
 import { useVisual } from '../store/visualStore'
 import { Mat } from './Mat'
+import { Pop } from './Pop'
+import { useMountedFlag } from './useMountedFlag'
 
 /** Một căn nhà: thân hộp + mái chóp 4 mặt. Đáy đặt tại y = 0. */
 export function House({ color, position = [0, 0, 0] }: { color: string; position?: [number, number, number] }) {
@@ -63,16 +65,30 @@ export function Landmark({ color }: { color: string }) {
   )
 }
 
-/** Công trình trên một thành phố theo cấp: 1–3 nhà, 4 = Landmark. Nhà xếp dọc theo cạnh (trục x cục bộ). */
+/**
+ * Công trình trên một thành phố theo cấp: 1–3 nhà, 4 = Landmark. Nhà xếp dọc theo cạnh (trục x cục bộ).
+ * Công trình xuất hiện sau lần render đầu (tức là vừa được xây) sẽ mọc lên có hiệu ứng nảy + bụi.
+ */
 export function BuildingSet({ level, color, width }: { level: number; color: string; width: number }) {
   const { buildings: b } = useVisual()
+  const mounted = useMountedFlag()
   if (level <= 0) return null
-  if (level >= 4) return <Landmark color={color} />
+  if (level >= 4) {
+    return (
+      <Pop key="landmark" animate={mounted}>
+        <Landmark color={color} />
+      </Pop>
+    )
+  }
   const spacing = Math.min(b.houseSize * 1.35, width / level)
   return (
     <group>
       {Array.from({ length: level }, (_, i) => (
-        <House key={i} color={color} position={[(i - (level - 1) / 2) * spacing, 0, 0]} />
+        <group key={`house-${i}`} position={[(i - (level - 1) / 2) * spacing, 0, 0]}>
+          <Pop animate={mounted}>
+            <House color={color} />
+          </Pop>
+        </group>
       ))}
     </group>
   )

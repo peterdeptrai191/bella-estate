@@ -5,6 +5,8 @@ import { useVisual } from '../store/visualStore'
 import type { TileTransform } from './boardLayout'
 import { BuildingSet } from './Buildings'
 import { Mat } from './Mat'
+import { Pop } from './Pop'
+import { useMountedFlag } from './useMountedFlag'
 import { TileProps } from './TileProps'
 
 function topColor(kind: TileKind, colors: VisualConfig['colors']): string {
@@ -29,8 +31,9 @@ function topColor(kind: TileKind, colors: VisualConfig['colors']): string {
 }
 
 export interface TileBuilding {
-  level: number
+  /** Màu người sở hữu. */
   color: string
+  level: number
 }
 
 /**
@@ -39,6 +42,7 @@ export interface TileBuilding {
  */
 export function Tile({ layout, building }: { layout: TileTransform; building?: TileBuilding }) {
   const { board, colors, props } = useVisual()
+  const mounted = useMountedFlag()
   const { def, width, depth } = layout
   const w = width - board.tileGap
   const d = depth - board.tileGap
@@ -85,11 +89,28 @@ export function Tile({ layout, building }: { layout: TileTransform; building?: T
         </RoundedBox>
       )}
 
-      <group position={[0, top + (layout.isCorner ? board.stripHeight : 0), contentZ]}>
+      {/* Tấm màu chủ sở hữu, phủ phần ô không có dải màu nhóm */}
+      {building && (
+        <group position={[0, top, contentZ]}>
+          <Pop animate={mounted}>
+            <RoundedBox
+              args={[w * 0.9, board.stripHeight, (groupColor ? d - stripDepth : d) * 0.86]}
+              radius={Math.min(board.tileRadius, board.stripHeight / 2)}
+              smoothness={board.tileSmoothness}
+              position={[0, board.stripHeight / 2, 0]}
+              receiveShadow
+            >
+              <Mat color={building.color} />
+            </RoundedBox>
+          </Pop>
+        </group>
+      )}
+
+      <group position={[0, top + board.stripHeight, contentZ]}>
         <group scale={props.scale}>
           <TileProps kind={def.kind} />
         </group>
-        {building && <BuildingSet level={building.level} color={building.color} width={w} />}
+        <BuildingSet level={building?.level ?? 0} color={building?.color ?? colors.tile} width={w} />
       </group>
     </group>
   )

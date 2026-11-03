@@ -25,8 +25,9 @@ src/
   game-core/  Luật chơi — TypeScript THUẦN
   config/     Hằng số kinh tế, dữ liệu bàn cờ, thông số đồ họa — dữ liệu THUẦN
   store/      Zustand store: nối game-core với UI/scene
-  scene/      Mọi thứ 3D (R3F)
+  scene/      Mọi thứ 3D (R3F) + event player (scene/events)
   ui/         Giao diện 2D: HUD, popup, màn hình
+  audio/      Phát âm thanh (Web Audio)
 docs/GDD.md   Game design document
 ```
 
@@ -57,9 +58,19 @@ ui, scene  →  store  →  game-core  →  config
 - Mọi thông số hình ảnh (màu, đèn, camera, kích thước ô, độ bo, AO…) nằm ở `src/config/visual.ts`. Không hardcode số hình ảnh trong component. Thêm thông số mới vào đó thì bảng leva tự có thêm thanh trượt.
 - Component đọc thông số qua `useVisual()` (`src/store/visualStore.ts`), không import `VISUAL` trực tiếp, để bảng leva chỉnh được trực tiếp.
 - Bảng leva (`src/ui/dev/VisualTuner.tsx`) chỉ nạp khi `import.meta.env.DEV`, không vào bản build.
-- Canvas dùng `frameloop="demand"`: sửa trực tiếp object three (camera, light…) xong phải gọi `invalidate()`.
+- Canvas vẽ liên tục (có animation nhân vật, camera bám). Nếu sau này chuyển về `frameloop="demand"` để tiết kiệm pin thì mọi chỗ sửa trực tiếp object three phải gọi `invalidate()` (CameraRig, Lights đã có sẵn).
 - Bóng: `shadows="percentage"` (PCFShadowMap + `shadow.radius`). Three r180+ đã bỏ PCFSoftShadowMap.
-- Bố cục bàn cờ và khung camera là toán thuần ở `src/scene/boardLayout.ts` (có test).
+- Bố cục bàn cờ, chỗ đứng quân cờ, khung camera là toán thuần ở `src/scene/boardLayout.ts`; hướng xúc xắc ở `diceMath.ts` (có test).
+- Asset (Kenney, CC0) ở `public/models/` và `public/sounds/`. Bảng âm thanh: `src/config/audio.ts`.
+
+## Animation: event player
+
+- game-core KHÔNG chờ animation. `gameStore.dispatch` cập nhật state ngay và đẩy `events` vào hàng đợi `animationStore`.
+- `scene/events/EventPlayer.tsx` phát lần lượt từng event qua `eventPlayer.ts` (mỗi handler trả Promise: chạy animation + âm thanh rồi áp event lên view).
+- Màn hình (quân cờ, chủ đất, nhà, tiền trên HUD) đọc **view** (`store/boardView.ts`), không đọc thẳng state game-core, nên luôn đi cùng animation. View chỉ đổi qua reducer thuần `applyEventToView`; `boardView.test.ts` bảo đảm phát hết event thì view khớp state game-core. Thêm event mới thì cập nhật reducer này.
+- Xúc xắc: kết quả lấy từ event, animation chỉ diễn lại (không physics). Điều khiển bằng lệnh nằm ở `*Control.ts` (diceControl, pieceControl, fxControl, cameraControl).
+- Thời lượng/biên độ mọi animation ở `visual.ts › animation`.
+- Chế độ dev: `window.__bella` mở các store ra console (đẩy event mẫu: `__bella.animation.getState().enqueue([...])`).
 
 ## Quy ước code
 

@@ -140,7 +140,102 @@ export const VISUAL = {
     color: '#3d2e2a',
   },
 
-  /** Nhà mẫu tạm hiển thị để xem thử (level: 1–3 nhà, 4 = Landmark; player: 1–4). */
+  /** Quân cờ (Kenney Mini Characters / Cube Pets, CC0). */
+  pieces: {
+    /** Model cho người chơi 1–4. Muốn dùng thú: '/models/pets/animal-cat.glb', animal-dog, animal-panda, animal-fox. */
+    models: [
+      '/models/characters/character-female-b.glb',
+      '/models/characters/character-male-c.glb',
+      '/models/characters/character-female-a.glb',
+      '/models/characters/character-male-e.glb',
+    ],
+    /** Chiều cao quân cờ (model được tự co về chiều cao này). */
+    height: 0.62,
+    /** Đế tròn màu người chơi dưới chân quân. */
+    baseRadius: 0.16,
+    baseHeight: 0.05,
+    /** Khoảng lệch giữa các quân khi đứng chung một ô. */
+    slotSpread: 0.2,
+    /** Quân đứng lệch vào phía trong ô (tỷ lệ chiều sâu ô), để không che nhà. */
+    anchorInset: 0.14,
+    /** Như trên nhưng cho 4 ô góc, để không đứng lẫn vào đồ trang trí. */
+    cornerInset: 0.27,
+  },
+
+  /** Xúc xắc ở giữa bàn cờ. */
+  dice: {
+    size: 0.5,
+    /** Độ bo góc (tỷ lệ cạnh). */
+    roundness: 0.18,
+    color: '#e23a46',
+    pipColor: '#fbfaf5',
+    /** Bán kính chấm (tỷ lệ cạnh). */
+    pipRatio: 0.1,
+    /** Khoảng cách giữa hai viên. */
+    spacing: 0.8,
+  },
+
+  /** Cây trang trí trên bãi cỏ (Kenney City Kit Suburban, CC0). Giữ khoảng giữa trống cho xúc xắc. */
+  scenery: {
+    enabled: true,
+    scale: 1.8,
+    items: [
+      { model: 'tree-large', x: 2.75, z: 2.3, rotationDeg: 0 },
+      { model: 'tree-small', x: 2.3, z: 2.8, rotationDeg: 40 },
+      { model: 'tree-large', x: -2.75, z: -2.3, rotationDeg: 90 },
+      { model: 'tree-small', x: -2.3, z: -2.8, rotationDeg: 10 },
+      { model: 'tree-large', x: -2.75, z: 2.6, rotationDeg: 30 },
+      { model: 'planter', x: -2.2, z: 2.85, rotationDeg: 0 },
+      { model: 'tree-small', x: 2.8, z: -2.7, rotationDeg: 60 },
+      { model: 'planter', x: 2.25, z: -2.85, rotationDeg: 90 },
+    ],
+  },
+
+  /** Thời lượng (giây) và biên độ các animation. */
+  animation: {
+    /** Nghỉ giữa hai event. */
+    eventGap: 0.05,
+    diceRise: 0.35,
+    diceFall: 0.4,
+    diceBounce: 0.28,
+    /** Độ cao xúc xắc bay lên. */
+    diceHeight: 2.2,
+    /** Số vòng xoay tối thiểu khi tung. */
+    diceSpins: 2,
+    /** Thời gian nhảy một ô. */
+    hopDuration: 0.3,
+    hopHeight: 0.42,
+    /** Mức co giãn khi nhảy (0 = không co giãn). */
+    squash: 0.18,
+    /** Bay từ Sân Bay. */
+    flyDuration: 1.2,
+    flyHeight: 3,
+    /** Dịch chuyển tức thời (thẻ, ra đảo): thu nhỏ rồi hiện lại. */
+    teleportDuration: 0.5,
+    /** Các quân xếp lại chỗ khi có quân rời/tới ô. */
+    restackDuration: 0.25,
+    /** Nhà/Landmark mọc lên. */
+    buildDuration: 0.5,
+    buildOvershoot: 1.15,
+    dustCount: 12,
+    dustDuration: 0.7,
+    dustColor: '#efe4d2',
+    /** Tiền bay. */
+    coinCount: 6,
+    coinDuration: 0.6,
+    coinStagger: 0.08,
+    coinHeight: 1.4,
+    coinSize: 0.2,
+    coinColor: '#ffc94d',
+    /** Camera bám quân đang đi: mức zoom thêm và tốc độ bám. */
+    cameraFollowZoom: 1.2,
+    cameraFollowSpeed: 4,
+    /** Dừng lại khi rút thẻ / đầu lượt. */
+    cardPause: 0.6,
+    turnPause: 0.25,
+  },
+
+  /** Nhà mẫu tạm hiển thị khi CHƯA có ván chơi (level: 1–3 nhà, 4 = Landmark; player: 1–4). */
   preview: {
     showBuildings: true,
     buildings: [

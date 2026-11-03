@@ -1,5 +1,6 @@
 import { RoundedBox } from '@react-three/drei'
 import { useMemo } from 'react'
+import { useAnimationStore } from '../store/animationStore'
 import { useVisual } from '../store/visualStore'
 import { boardLength, computeTileLayout } from './boardLayout'
 import { Mat } from './Mat'
@@ -16,8 +17,16 @@ export function Board() {
   const centerSize = length - 2 * board.cornerSize - 2 * board.centerInset
   const centerHeight = Math.max(0.02, board.tileHeight - board.centerDrop)
 
+  // Có ván đang chơi: lấy chủ sở hữu và công trình từ view. Chưa có: hiện nhà mẫu trong visual.ts.
+  const view = useAnimationStore((s) => s.view)
   const buildings = new Map<number, TileBuilding>()
-  if (preview.showBuildings) {
+  if (view) {
+    view.tiles.forEach((t, i) => {
+      if (!t.owner) return
+      const seat = view.players.find((p) => p.id === t.owner)?.seat ?? 0
+      buildings.set(i, { level: t.level, color: playerColors[seat % playerColors.length] })
+    })
+  } else if (preview.showBuildings) {
     for (const b of preview.buildings) {
       buildings.set(b.tile, { level: b.level, color: playerColors[(b.player - 1) % playerColors.length] })
     }

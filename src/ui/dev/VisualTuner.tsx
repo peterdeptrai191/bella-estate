@@ -9,7 +9,7 @@ import { VISUAL, type VisualConfig } from '../../config/visual'
 import { useVisualStore } from '../../store/visualStore'
 
 const SEP = '__'
-const SKIP_KEYS = new Set(['buildings']) // preview.buildings: danh sách nhà mẫu, không chỉnh bằng thanh trượt
+const SKIP_KEYS = new Set(['buildings', 'items']) // preview.buildings: danh sách nhà mẫu, không chỉnh bằng thanh trượt
 
 type Control = { value: number | string | boolean; label: string; min?: number; max?: number; step?: number; options?: number[] }
 type SchemaNode = Control | ReturnType<typeof folder>
@@ -92,11 +92,15 @@ export function VisualTuner() {
     setVisual(unflatten(values))
   }, [values, setVisual])
 
+  // Đặt bên phải, dưới khung người chơi góc trên để không che HUD.
   return (
-    <Leva
-      collapsed={window.innerWidth < 768}
-      titleBar={{ title: 'Visual (dev)' }}
-      theme={{ sizes: { rootWidth: '360px', controlWidth: '170px' } }}
-    />
+    <div className="fixed right-3 top-20 z-50 max-h-[calc(100%-11rem)] w-[360px] max-w-[calc(100%-1.5rem)] overflow-auto">
+      <Leva
+        fill
+        collapsed
+        titleBar={{ title: 'Visual (dev)' }}
+        theme={{ sizes: { rootWidth: '360px', controlWidth: '170px' } }}
+      />
+    </div>
   )
 }

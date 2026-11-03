@@ -103,3 +103,93 @@ function normalize(v: Vec3): Vec3 {
   const len = Math.hypot(...v) || 1
   return [v[0] / len, v[1] / len, v[2] / len]
 }
+
+/** Đổi toạ độ cục bộ trong ô (x dọc cạnh, z hướng ra ngoài) sang toạ độ bàn cờ [x, z]. */
+export function localToBoard(t: TileTransform, lx: number, lz: number): [number, number] {
+  const c = Math.cos(t.rotationY)
+  const s = Math.sin(t.rotationY)
+  return [t.x + lx * c + lz * s, t.z - lx * s + lz * c]
+}
+
+/** Độ lệch các chỗ đứng khi `count` quân chung một ô (đơn vị: slotSpread). */
+export function slotOffsets(count: number): Array<[number, number]> {
+  switch (count) {
+    case 0:
+    case 1:
+      return [[0, 0]]
+    case 2:
+      return [
+        [-1, 0],
+        [1, 0],
+      ]
+    case 3:
+      return [
+        [-1, -0.7],
+        [1, -0.7],
+        [0, 0.8],
+      ]
+    default:
+      return [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ]
+  }
+}
+
+export interface PieceSpot {
+  id: string
+  position: number
+  bankrupt: boolean
+}
+
+/**
+ * Vị trí đứng [x, z] của từng quân. Quân chung một ô được xếp lệch theo thứ tự người chơi,
+ * ô góc rộng hơn nên giãn rộng hơn.
+ */
+export function piecePlacement(
+  pieces: PieceSpot[],
+  layout: TileTransform[],
+  cfg: VisualConfig['pieces'],
+): Map<string, [number, number]> {
+  const result = new Map<string, [number, number]>()
+  const byTile = new Map<number, string[]>()
+  for (const p of pieces) {
+    if (p.bankrupt) continue
+    byTile.set(p.position, [...(byTile.get(p.position) ?? []), p.id])
+  }
+  for (const [tile, ids] of byTile) {
+    const t = layout[tile]
+    const spread = cfg.slotSpread * (t.isCorner ? 1.6 : 1)
+    const anchorZ = -t.depth * (t.isCorner ? cfg.cornerInset : cfg.anchorInset)
+    const offsets = slotOffsets(ids.length)
+    ids.forEach((id, i) => {
+      const [ox, oz] = offsets[i]
+      result.set(id, localToBoard(t, ox * spread, anchorZ + oz * spread))
+    })
+  }
+  return result
+}
+
+/** Mặt trên của ô (chỗ quân cờ đứng). */
+export function tileTopY(board: VisualConfig['board']): number {
+  return board.tileHeight + board.stripHeight
+}
+
+/** Mặt bãi cỏ ở giữa (chỗ xúc xắc nằm). */
+export function centerTopY(board: VisualConfig['board']): number {
+  return Math.max(0.02, board.tileHeight - board.centerDrop)
+}
+
+/** Vị trí nghỉ của hai viên xúc xắc: đặt cạnh nhau theo phương ngang màn hình. */
+export function diceRestPositions(visual: VisualConfig): Array<[number, number, number]> {
+  const az = (visual.camera.azimuthDeg * Math.PI) / 180
+  const right: [number, number] = [Math.cos(az), -Math.sin(az)]
+  const y = centerTopY(visual.board) + visual.dice.size / 2
+  const h = visual.dice.spacing / 2
+  return [
+    [-right[0] * h, y, -right[1] * h],
+    [right[0] * h, y, right[1] * h],
+  ]
+}

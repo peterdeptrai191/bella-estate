@@ -16,11 +16,10 @@ import {
   formatMoney,
   getLegalActions,
   netWorth,
-  nextRandom,
   ownedTiles,
-  type GameAction,
   type GameState,
 } from '../src/game-core'
+import { createRandomPlayer } from '../src/game-core/randomPlayer'
 
 function parseArgs() {
   const args = process.argv.slice(2)
@@ -32,46 +31,6 @@ function parseArgs() {
     seed: Number(get('seed') ?? Math.floor(Math.random() * 1_000_000)),
     players: Number(get('players') ?? 4),
     quiet: args.includes('--quiet'),
-  }
-}
-
-/** Chính sách ngẫu nhiên có trọng số, dùng RNG riêng (có seed) để ván tái lập được. */
-function makePolicy(seed: number) {
-  let rngState = seed ^ 0x5bd1e995
-  const rand = () => {
-    const [v, next] = nextRandom(rngState)
-    rngState = next
-    return v
-  }
-  const pickOne = <T>(items: T[]): T => items[Math.floor(rand() * items.length)]
-
-  return (state: GameState, legal: GameAction[]): GameAction => {
-    const of = <K extends GameAction['type']>(type: K) =>
-      legal.filter((a): a is Extract<GameAction, { type: K }> => a.type === type)
-    const me = currentPlayer(state)
-
-    if (legal.length === 1) return legal[0]
-    // Việc bắt buộc
-    const shield = of('USE_CARD').find((a) => a.card === 'SHIELD')
-    if (shield && rand() < 0.8) return shield
-    if (of('PAY_RENT').length) return of('PAY_RENT')[0]
-    if (of('SELL').length) return pickOne(of('SELL'))
-    if (of('EARTHQUAKE').length) return pickOne(of('EARTHQUAKE'))
-
-    // Đầu lượt
-    if (of('FLY').length && rand() < 0.6) return pickOne(of('FLY'))
-    const escapeCard = of('USE_CARD').find((a) => a.card === 'ESCAPE_ISLAND')
-    if (escapeCard && rand() < 0.7) return escapeCard
-    if (of('PAY_ISLAND_FEE').length && rand() < 0.3) return of('PAY_ISLAND_FEE')[0]
-    if (of('ROLL_DICE').length) return of('ROLL_DICE')[0]
-
-    // Trên ô: giữ lại ít tiền mặt để đỡ phá sản
-    const reserve = me.money > 400
-    if (of('HOST_FESTIVAL').length) return pickOne(of('HOST_FESTIVAL'))
-    if (of('BUYOUT').length && reserve && rand() < 0.4) return of('BUYOUT')[0]
-    if (of('BUY').length && rand() < 0.8) return of('BUY')[0]
-    if (of('BUILD').length && (state.turn.freeHouse || (reserve && rand() < 0.6))) return pickOne(of('BUILD'))
-    return of('END_TURN')[0] ?? legal[0]
   }
 }
 
@@ -88,7 +47,7 @@ function main() {
     names.map((name) => ({ name, isBot: true })),
     seed,
   )
-  const decide = makePolicy(seed)
+  const decide = createRandomPlayer(seed)
   const log = (line: string) => {
     if (!quiet) console.log(line)
   }

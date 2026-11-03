@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VISUAL } from '../config/visual'
-import { boardLength, computeTileLayout, fitZoom } from './boardLayout'
+import { boardLength, computeTileLayout, fitZoom, piecePlacement } from './boardLayout'
 
 const layout = computeTileLayout(VISUAL.board)
 
@@ -34,5 +34,36 @@ describe('Bố cục bàn cờ 3D', () => {
     const portrait = fitZoom(VISUAL, 390, 844)
     expect(desktop).toBeGreaterThan(0)
     expect(portrait).toBeLessThan(desktop)
+  })
+})
+
+describe('Quân cờ chung ô', () => {
+  it('không chồng lên nhau, ô góc giãn rộng hơn', () => {
+    const spots = (tile: number) => ['p1', 'p2', 'p3', 'p4'].map((id) => ({ id, position: tile, bankrupt: false }))
+    for (const tile of [0, 5]) {
+      const placed = [...piecePlacement(spots(tile), layout, VISUAL.pieces).values()]
+      expect(placed).toHaveLength(4)
+      for (let i = 0; i < placed.length; i++) {
+        for (let j = i + 1; j < placed.length; j++) {
+          const d = Math.hypot(placed[i][0] - placed[j][0], placed[i][1] - placed[j][1])
+          expect(d).toBeGreaterThan(VISUAL.pieces.slotSpread * 1.5)
+        }
+      }
+    }
+  })
+
+  it('quân phá sản không có chỗ đứng; quân đứng một mình ở giữa phần trong của ô', () => {
+    const placed = piecePlacement(
+      [
+        { id: 'p1', position: 5, bankrupt: false },
+        { id: 'p2', position: 5, bankrupt: true },
+      ],
+      layout,
+      VISUAL.pieces,
+    )
+    expect(placed.has('p2')).toBe(false)
+    const [x, z] = placed.get('p1') ?? [0, 0]
+    const t = layout[5]
+    expect(Math.hypot(x - t.x, z - t.z)).toBeCloseTo(t.depth * VISUAL.pieces.anchorInset)
   })
 })
