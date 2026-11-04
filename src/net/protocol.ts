@@ -1,14 +1,13 @@
 /**
- * Giao thức client ↔ server (Colyseus). Chỉ có kiểu dữ liệu và hằng số — dùng chung cho
- * client (src/store/net.ts) và server (server/src). Server là nguồn sự thật duy nhất:
- * client chỉ gửi Ý ĐỊNH (action không có playerId), server gán ghế, kiểm tra bằng game-core rồi phát event.
+ * Giao thức client ↔ server online (HTTP + polling, giống Bella Poker). Chỉ có kiểu dữ liệu và hằng số —
+ * dùng chung cho client (src/store/net.ts) và API (api/estate, logic ở src/online).
+ * Server là nguồn sự thật duy nhất: client chỉ gửi Ý ĐỊNH (action không có playerId), server gán ghế,
+ * kiểm tra bằng game-core rồi trả state + event.
  */
 import type { BotLevel } from '../config/bots'
 import type { GameAction, GameEvent, GameState, PlayerId } from '../game-core'
 
-/** Tên 2 loại phòng đăng ký trên server. */
-export const ROOM_PRIVATE = 'private'
-export const ROOM_QUICK = 'quick'
+export const API_PATH = '/api/estate'
 
 export const NET = {
   /** Mã phòng riêng: 6 ký tự, bỏ các ký tự dễ nhầm (0/O, 1/I/L). */
@@ -18,19 +17,21 @@ export const NET = {
   maxPlayers: 4,
   /** Ghép trận nhanh: chờ tối đa bấy nhiêu giây rồi thêm bot cho đủ ghế. */
   quickWaitSec: 30,
-  /** Mất kết nối: giữ chỗ bấy nhiêu giây (bot chơi thay trong lúc đó). */
+  /** Không nhận được tin của người chơi quá bấy nhiêu giây thì coi như mất kết nối (bot chơi thay). */
+  disconnectSec: 8,
+  /** Mất kết nối: giữ chỗ bấy nhiêu giây; quá thì ghế giao hẳn cho bot. */
   reconnectSec: 60,
+  /** Nhịp hỏi server (ms): trong ván / ở sảnh chờ / khi tab bị ẩn. */
+  pollMs: 900,
+  lobbyPollMs: 1500,
+  hiddenPollMs: 4000,
   /** Mức bot server dùng để lấp ghế và chơi thay. */
   botLevel: 'normal' as BotLevel,
-  defaultPort: 2567,
+  /** Giữ lại bấy nhiêu lô event gần nhất để client hỏi bù (quá thì gửi lại toàn bộ state). */
+  logSize: 120,
+  /** Phòng tự xóa sau bấy nhiêu giây không ai đụng tới. */
+  roomTtlSec: 6 * 3600,
 } as const
-
-export interface JoinOptions {
-  name: string
-  skin: string
-  /** Chỉ khi tạo phòng riêng: số người 2–4. */
-  capacity?: number
-}
 
 export type IntentAction = GameAction extends infer A ? (A extends { playerId: PlayerId } ? Omit<A, 'playerId'> : never) : never
 
@@ -49,7 +50,7 @@ export interface LobbyInfo {
   mode: 'private' | 'quick'
   capacity: number
   seats: SeatInfo[]
-  /** Chỉ số ghế của chính client nhận tin. */
+  /** Chỉ số ghế của chính người hỏi. */
   you: number
   /** Ghép nhanh: còn bao nhiêu ms trước khi thêm bot. */
   quickRemainingMs: number | null
@@ -62,32 +63,44 @@ export interface DeadlineInfo {
   totalMs: number
 }
 
-// Server → client
-export interface SyncMessage {
-  state: GameState
-  seats: SeatInfo[]
-  you: PlayerId | null
+/** Phần ván đấu trong câu trả lời. `full` = gửi lại toàn bộ (client dựng lại màn hình), không thì chỉ event mới. */
+export interface GameSnapshot {
   matchId: string
-  deadline: DeadlineInfo | null
-}
-
-export interface EventsMessage {
+  you: PlayerId | null
   state: GameState
+  /** Số thứ tự lô event cuối cùng đã gồm trong `state`. Lần hỏi sau gửi lại số này. */
+  seq: number
+  full: boolean
   events: GameEvent[]
+}
+
+export interface RoomView {
+  lobby: LobbyInfo
+  game: GameSnapshot | null
   deadline: DeadlineInfo | null
 }
 
-export interface ServerMessages {
-  lobby: LobbyInfo
-  sync: SyncMessage
-  events: EventsMessage
-  deadline: DeadlineInfo
-  error: { message: string }
+export interface JoinRequest {
+  name: string
+  skin: string
 }
 
-// Client → server
-export interface ClientMessages {
-  intent: { action: IntentAction }
-  /** Chủ phòng bắt đầu sớm khi đã có ít nhất 2 người. */
-  start: Record<string, never>
+export type ApiRequest =
+  | ({ op: 'create'; capacity: number } & JoinRequest)
+  | ({ op: 'join'; code: string } & JoinRequest)
+  | ({ op: 'quick' } & JoinRequest)
+  | { op: 'start'; code: string; token: string }
+  | { op: 'intent'; code: string; token: string; action: IntentAction; since: number }
+  | { op: 'leave'; code: string; token: string }
+  | { op: 'poll'; code: string; token: string; since: number }
+
+/** Vào phòng thành công: mã phòng + khóa bí mật của ghế (lưu lại để vào lại khi mất mạng / tải lại trang). */
+export interface JoinResponse {
+  code: string
+  token: string
+  view: RoomView
+}
+
+export interface ApiError {
+  error: string
 }

@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/estate.js": {
+      "maxDuration": 10
+    }
+  },
+  "regions": ["sin1"]
+}

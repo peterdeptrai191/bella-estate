@@ -3,8 +3,8 @@
  * trước khi cho bot đi tiếp hoặc bắt đầu tính giờ lượt của người chơi.
  * Thông số lấy thẳng từ config/visual.ts (dữ liệu thuần, dùng chung với client).
  */
-import { VISUAL } from '../../src/config/visual'
-import type { GameEvent } from '../../src/game-core'
+import { VISUAL } from '../config/visual'
+import type { GameEvent } from '../game-core'
 
 const a = VISUAL.animation
 const coins = a.coinDuration + a.coinCount * a.coinStagger

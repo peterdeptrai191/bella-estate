@@ -29,16 +29,17 @@ src/
   ui/         Giao diện 2D: HUD, popup, màn hình
   audio/      Phát âm thanh (Web Audio)
   net/        Giao thức client ↔ server (chỉ kiểu dữ liệu + hằng số)
-server/       Server multiplayer Colyseus (gói Node riêng, import src/game-core)
+  online/     Logic phòng online + API (chạy trên Vercel Function, dùng game-core)
+api/estate.js Vercel Function — SINH TỰ ĐỘNG từ src/online bằng `npm run build:api`, đừng sửa tay
 docs/GDD.md   Game design document
-docs/MULTIPLAYER.md  Kiến trúc online + cách deploy server
+docs/MULTIPLAYER.md  Kiến trúc online + cách deploy
 ```
 
 Hướng phụ thuộc chỉ đi một chiều:
 
 ```
 ui, scene  →  store  →  game-core  →  config
-server     →  game-core, config, net
+online     →  game-core, config, net   (không import React/Three/store/ui/scene)
 ```
 
 1. **`game-core` là TypeScript thuần.** Không import React, Three.js, Zustand, `ui/`, `scene/`, `store/`, không dùng DOM/`window`/`localStorage`. Mục đích: sau này chạy y nguyên trên server multiplayer. Được phép import `config/`.
@@ -83,7 +84,7 @@ server     →  game-core, config, net
 
 - Màn hình: `uiStore.screen` = `home` | `bots` | `friends` | `lobby` | `shop` | `maps` | `game`. Menu ở `ui/screens/` trên nền xanh `LandingBg` (trang chủ là landing page cuộn được, theo video tham khảo); bàn cờ 3D chỉ dựng khi `screen === 'game'`. Trong trận là `ui/Hud.tsx`. Bắt đầu/chơi lại/thoát: `ui/matchSetup.ts`.
 - Thương hiệu: logo game Bella Estate và logo nhà phát hành Bella Game Studio ở `public/brand/` (đã tách nền). Mở game có màn hình giới thiệu nhà phát hành (`StudioSplash`).
-- `gameStore` có 2 chế độ: `offline` (áp action ngay, bot chạy ở `store/matchDriver.ts`) và `online` (gửi ý định lên server qua `store/net.ts`; state/event chỉ đến từ server). `seats` giữ tên, skin, người/bot, kết nối của từng ghế.
+- `gameStore` có 2 chế độ: `offline` (áp action ngay, bot chạy ở `store/matchDriver.ts`) và `online` (gửi ý định lên server qua `store/net.ts`, polling HTTP; state/event chỉ đến từ server). `seats` giữ tên, skin, người/bot, kết nối của từng ghế.
 - `store/match.ts` (thuần, có test): `levelOptions` / `previewAfter` thử chính reducer để biết xây được tới cấp nào và giá bao nhiêu. Không viết luật mới ở đây.
 - `store/matchDriver.ts` (chỉ offline): khi hàng đợi animation trống thì gửi action tự động sau một nhịp (`visual.ts › animation.botThinkDelay`), hoặc bật đồng hồ 20 giây (`ECONOMY.turnTimeLimitSec`) và hết giờ thì gửi `getTimeoutAction`. Online thì server làm việc này.
 - `store/uiStore.ts`: trạng thái thuần giao diện (màn hình, ô đang xem, chế độ chọn ô trên bàn cờ, chữ lớn, thẻ đang lật, đồng hồ).
@@ -93,12 +94,12 @@ server     →  game-core, config, net
 - Phong cách: chữ Baloo 2, nút nổi khối `btn-3d btn-blue|green|pink|yellow|gray`, khung `Modal` (ruy băng + giấy xếp chồng) trong `ui/kit.tsx`. Cỡ chữ gốc co theo khung hình (`index.css`) nên mọi kích thước dùng `rem`. Giao diện thiết kế cho màn hình ngang; điện thoại cầm dọc thì hiện nhắc xoay ngang.
 - Dev: nút "Bot chơi thay" ở thanh trên; `__bella.ui.setState({ turnTimeScale: 100 })` kéo dài đồng hồ lượt; `__bella.newMatch(seed)` mở ván với 3 bot; `__bella.menu()` về trang chủ.
 
-## Server multiplayer (`server/`)
+## Chơi online (`src/online/`, giống Bella Poker)
 
-- Gói riêng: `npm run server:install` rồi `npm run server` (cổng 2567). Test: `npm run test:server`. Typecheck: `cd server && npx tsc --noEmit -p .`
-- Server-authoritative: client gửi ý định, server gán `playerId` theo ghế, kiểm tra bằng `applyAction`, phát state (đã bỏ trạng thái RNG) + event. Xúc xắc tung trên server (RNG crypto thay vào trước mỗi action).
-- `MatchSession.ts` là logic ván (không phụ thuộc Colyseus, test bằng đồng hồ giả); `BellaRoom.ts` chỉ nối Colyseus. Giao thức và hằng số ở `src/net/protocol.ts`.
-- Các lựa chọn khi yêu cầu chưa rõ (bắt đầu sớm, lấp bot, giữ chỗ…) ghi ở `docs/RULES-DECISIONS.md` mục "Chơi online".
+- Chạy hoàn toàn trên Vercel: Function `api/estate.js` + Upstash Redis + client polling. Không có tiến trình chạy liên tục: mỗi lần client hỏi server, `tick(room, now)` cho ván chạy tới hiện tại (bot, hết giờ, lấp bot).
+- Server-authoritative: client gửi ý định, server gán `playerId` theo khóa ghế, kiểm tra bằng `applyAction`, trả state (bỏ trạng thái RNG) + event. RNG crypto thay vào trước mỗi action.
+- `room.ts` là logic thuần trên JSON; `handler.ts` là API; `store.ts` là Redis/bộ nhớ; `vercel.ts` bundle thành `api/estate.js`. Sửa bất cứ file nào trong `src/online/` (hoặc game-core/config) thì chạy `npm run build:api` — có test bắt lỗi nếu bundle cũ. `npm run build` cũng tự bundle.
+- `npm run dev` tự phục vụ `/api/estate` (lưu bộ nhớ). Chi tiết + deploy: `docs/MULTIPLAYER.md`. Các lựa chọn khi yêu cầu chưa rõ ghi ở `docs/RULES-DECISIONS.md` mục "Chơi online".
 
 ## Quy ước code
 
@@ -108,5 +109,5 @@ server     →  game-core, config, net
 - Định danh trong code bằng tiếng Anh; comment và nội dung hiển thị cho người chơi có thể bằng tiếng Việt.
 - Mọi luật mới trong game-core phải có test Vitest đi kèm.
 - UI 2D dùng Tailwind class, đặt đè lên canvas; lớp phủ không cần click thì để `pointer-events-none`.
-- Trước khi coi là xong: `npm run typecheck`, `npm test` và `npm run lint` đều phải qua; sửa server thì cả `npm run test:server` và typecheck của server.
+- Trước khi coi là xong: `npm run typecheck`, `npm test` và `npm run lint` đều phải qua; sửa `src/online/` thì chạy thêm `npm run build:api`.
 - Làm theo từng phase được giao; không tự làm trước tính năng của phase sau.

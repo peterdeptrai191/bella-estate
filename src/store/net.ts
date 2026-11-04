@@ -1,139 +1,211 @@
 /**
- * Kết nối server multiplayer (Colyseus). Server là nguồn sự thật: client gửi ý định,
- * nhận state + event và đẩy vào gameStore (animation phát như chơi offline).
+ * Kết nối chơi online qua HTTP + polling (giống Bella Poker): gọi API cùng tên miền (/api/estate),
+ * hỏi server đều đặn để nhận state + event mới. Server là nguồn sự thật; event đi vào gameStore nên
+ * animation phát giống hệt chơi offline.
  */
-import { Client, type Room } from 'colyseus.js'
-import { NET, ROOM_PRIVATE, ROOM_QUICK, type DeadlineInfo, type JoinOptions, type ServerMessages } from '../net/protocol'
+import { API_PATH, NET, type DeadlineInfo, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
 import { useGameStore } from './gameStore'
 import { useOnlineStore } from './onlineStore'
 import { useUiStore } from './uiStore'
 
-const TOKEN_KEY = 'bella-estate:reconnect'
+const SESSION_KEY = 'bella-estate:online-session'
 
-/** Địa chỉ server: biến môi trường VITE_SERVER_URL, hoặc cổng mặc định trên máy đang chạy (khi dev). */
-export function serverUrl(): string | null {
-  const configured = import.meta.env.VITE_SERVER_URL as string | undefined
-  if (configured) return configured
-  const { hostname, protocol } = window.location
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || /^192\.168\./.test(hostname)) {
-    return `${protocol === 'https:' ? 'wss' : 'ws'}://${hostname}:${NET.defaultPort}`
-  }
-  return null
+interface Session {
+  code: string
+  token: string
 }
 
-let room: Room | null = null
+let session: Session | null = null
+/** Số lô event đã nhận (-1 = chưa có ván). */
+let since = -1
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+let polling = false
+let failures = 0
 
-function saveToken(token: string | null) {
+function saveSession(s: Session | null) {
   try {
-    if (token) sessionStorage.setItem(TOKEN_KEY, token)
-    else sessionStorage.removeItem(TOKEN_KEY)
+    if (s) sessionStorage.setItem(SESSION_KEY, JSON.stringify(s))
+    else sessionStorage.removeItem(SESSION_KEY)
   } catch {
     // Không lưu được: chỉ mất khả năng tự vào lại khi tải lại trang.
   }
 }
 
-function readToken(): string | null {
+function readSession(): Session | null {
   try {
-    return sessionStorage.getItem(TOKEN_KEY)
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const data: unknown = JSON.parse(raw)
+    if (data && typeof data === 'object' && 'code' in data && 'token' in data) {
+      const { code, token } = data as Record<string, unknown>
+      if (typeof code === 'string' && typeof token === 'string') return { code, token }
+    }
   } catch {
-    return null
+    // bỏ qua
   }
+  return null
+}
+
+class ApiFailure extends Error {
+  readonly status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function call<T>(body: Record<string, unknown> | null, query?: Record<string, string | number>): Promise<T> {
+  const url = query ? `${API_PATH}?${new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]))}` : API_PATH
+  let response: Response
+  try {
+    response = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined)
+  } catch {
+    throw new ApiFailure(0, 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.')
+  }
+  const data = (await response.json().catch(() => ({}))) as { error?: string }
+  if (!response.ok) throw new ApiFailure(response.status, data.error ?? 'Có lỗi máy chủ.')
+  return data as T
 }
 
 function applyDeadline(info: DeadlineInfo | null) {
   if (!info) return
   const now = Date.now()
-  useUiStore.getState().setDeadline({ playerId: info.playerId, startedAt: now + info.remainingMs - info.totalMs, endsAt: now + info.remainingMs })
+  const endsAt = now + info.remainingMs
+  const current = useUiStore.getState().deadline
+  // Tránh vẽ lại vòng đồng hồ mỗi lần hỏi: chỉ cập nhật khi đổi người hoặc lệch đáng kể.
+  if (current && current.playerId === info.playerId && Math.abs(current.endsAt - endsAt) < 1500) return
+  useUiStore.getState().setDeadline({ playerId: info.playerId, startedAt: endsAt - info.totalMs, endsAt })
 }
 
-function attach(r: Room) {
-  room = r
-  saveToken(r.reconnectionToken)
-  const online = useOnlineStore.getState()
-  online.set({ status: 'lobby', error: null })
-  const send = (action: unknown) => r.send('intent', { action })
-
-  r.onMessage('lobby', (lobby: ServerMessages['lobby']) => {
-    useOnlineStore.getState().set({ lobby, lobbyAt: Date.now() })
-    if (lobby.started) useGameStore.getState().updateSeats(lobby.seats)
-  })
-  r.onMessage('sync', (m: ServerMessages['sync']) => {
-    useGameStore.getState().loadRemote(m.state, m.seats, m.you, m.matchId, send)
-    applyDeadline(m.deadline)
-    useOnlineStore.getState().set({ status: 'playing' })
-    useUiStore.getState().setScreen('game')
-  })
-  r.onMessage('events', (m: ServerMessages['events']) => {
-    useGameStore.getState().applyRemote(m.state, m.events)
-    applyDeadline(m.deadline)
-  })
-  r.onMessage('deadline', (m: ServerMessages['deadline']) => applyDeadline(m))
-  r.onMessage('error', (m: ServerMessages['error']) => {
-    useGameStore.setState({ awaitingServer: false })
-    useUiStore.getState().showBanner(m.message, 'bad', 1.6)
-  })
-  r.onLeave((code) => {
-    if (room !== r) return
-    room = null
-    // 1000/4000 = tự rời. Mã khác: mất kết nối → thử vào lại bằng token (server giữ chỗ 60 giây).
-    if (code === 1000 || code === 4000) return
-    useOnlineStore.getState().set({ status: 'reconnecting' })
-    void reconnect()
-  })
-}
-
-async function run(label: string, fn: (client: Client) => Promise<Room>) {
-  const url = serverUrl()
-  const online = useOnlineStore.getState()
-  if (!url) {
-    online.set({ status: 'error', error: 'Chưa cấu hình máy chủ chơi online (VITE_SERVER_URL).' })
+/** Áp câu trả lời của server: sảnh chờ, hoặc state + event của ván. */
+function accept(view: RoomView) {
+  useOnlineStore.getState().set({ lobby: view.lobby, lobbyAt: Date.now() })
+  const game = view.game
+  if (!game) {
+    if (useOnlineStore.getState().status !== 'lobby') useOnlineStore.getState().set({ status: 'lobby', error: null })
+    if (useUiStore.getState().screen !== 'lobby') useUiStore.getState().setScreen('lobby')
     return
   }
-  online.set({ status: 'connecting', error: null, lobby: null, pendingLabel: label })
+  const store = useGameStore.getState()
+  if (game.full || store.mode !== 'online' || !store.game) {
+    store.loadRemote(game.state, view.lobby.seats, game.you, game.matchId, sendIntent)
+    useOnlineStore.getState().set({ status: 'playing', error: null })
+    useUiStore.getState().setScreen('game')
+  } else if (game.seq !== since) {
+    store.applyRemote(game.state, game.events)
+  }
+  store.updateSeats(view.lobby.seats)
+  since = game.seq
+  applyDeadline(view.deadline)
+}
+
+function schedulePoll() {
+  if (pollTimer) clearTimeout(pollTimer)
+  if (!session) return
+  const inGame = useOnlineStore.getState().status === 'playing'
+  const delay = document.hidden ? NET.hiddenPollMs : inGame ? NET.pollMs : NET.lobbyPollMs
+  pollTimer = setTimeout(() => void pollOnce(), delay * (failures > 0 ? Math.min(4, failures + 1) : 1))
+}
+
+async function pollOnce() {
+  if (!session || polling) return schedulePoll()
+  polling = true
+  const current = session
   try {
-    attach(await fn(new Client(url)))
+    const view = await call<RoomView>(null, { code: current.code, token: current.token, since })
+    if (session !== current) return
+    failures = 0
+    if (useOnlineStore.getState().status === 'reconnecting') useOnlineStore.getState().set({ status: since >= 0 ? 'playing' : 'lobby' })
+    accept(view)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    online.set({
-      status: 'error',
-      error: /not found|invalid|locked|full/i.test(message)
-        ? 'Không tìm thấy phòng, phòng đã đủ người hoặc đã bắt đầu.'
-        : `Không kết nối được máy chủ (${url}).`,
-    })
+    if (session !== current) return
+    if (error instanceof ApiFailure && (error.status === 403 || error.status === 404)) {
+      // Phòng không còn / đã bị giao cho bot: thoát về màn hình chơi cùng bạn.
+      stop()
+      useOnlineStore.getState().set({ status: 'error', error: error.message, lobby: null })
+      return
+    }
+    failures++
+    useOnlineStore.getState().set({ status: 'reconnecting' })
+  } finally {
+    polling = false
+    schedulePoll()
   }
 }
 
-export const quickMatch = (opts: JoinOptions) => run('Đang tìm trận…', (c) => c.joinOrCreate(ROOM_QUICK, opts))
-export const createRoom = (opts: JoinOptions) => run('Đang tạo phòng…', (c) => c.create(ROOM_PRIVATE, opts))
-export const joinRoom = (code: string, opts: JoinOptions) =>
-  run('Đang vào phòng…', (c) => c.joinById(code.trim().toUpperCase(), opts))
+function begin(joined: JoinResponse) {
+  session = { code: joined.code, token: joined.token }
+  since = -1
+  failures = 0
+  saveSession(session)
+  accept(joined.view)
+  schedulePoll()
+}
+
+function stop() {
+  if (pollTimer) clearTimeout(pollTimer)
+  pollTimer = null
+  session = null
+  since = -1
+  saveSession(null)
+}
+
+async function run(label: string, body: Record<string, unknown>) {
+  const online = useOnlineStore.getState()
+  online.set({ status: 'connecting', error: null, lobby: null, pendingLabel: label })
+  try {
+    begin(await call<JoinResponse>(body))
+  } catch (error) {
+    online.set({ status: 'error', error: error instanceof Error ? error.message : String(error) })
+  }
+}
+
+function sendIntent(action: IntentAction) {
+  const current = session
+  if (!current) return
+  call<RoomView>({ op: 'intent', code: current.code, token: current.token, action, since })
+    .then((view) => {
+      if (session === current) accept(view)
+    })
+    .catch((error: unknown) => {
+      useGameStore.setState({ awaitingServer: false })
+      useUiStore.getState().showBanner(error instanceof Error ? error.message : 'Có lỗi máy chủ.', 'bad', 1.6)
+    })
+}
+
+export const quickMatch = (opts: JoinRequest) => run('Đang tìm trận…', { op: 'quick', ...opts })
+export const createRoom = (opts: JoinRequest & { capacity: number }) => run('Đang tạo phòng…', { op: 'create', ...opts })
+export const joinRoom = (code: string, opts: JoinRequest) => run('Đang vào phòng…', { op: 'join', code: code.trim().toUpperCase(), ...opts })
 
 export function startNow() {
-  room?.send('start', {})
+  const current = session
+  if (!current) return
+  call<RoomView>({ op: 'start', code: current.code, token: current.token })
+    .then(accept)
+    .catch((error: unknown) => useOnlineStore.getState().set({ error: error instanceof Error ? error.message : String(error) }))
 }
 
 export async function leaveRoom() {
-  const r = room
-  room = null
-  saveToken(null)
+  const current = session
+  stop()
   useOnlineStore.getState().set({ status: 'idle', lobby: null, error: null })
-  if (r) await r.leave(true).catch(() => undefined)
+  if (current) await call({ op: 'leave', code: current.code, token: current.token }).catch(() => undefined)
 }
 
-/** Vào lại phòng cũ (mất mạng, hoặc tải lại trang trong lúc đang chơi). */
+/** Vào lại phòng cũ khi tải lại trang (server giữ chỗ 60 giây, trong lúc đó bot chơi thay). */
 export async function reconnect(): Promise<boolean> {
-  const token = readToken()
-  const url = serverUrl()
-  if (!token || !url) return false
-  for (let attempt = 0; attempt < 6; attempt++) {
-    try {
-      attach(await new Client(url).reconnect(token))
-      return true
-    } catch {
-      await new Promise((r) => setTimeout(r, 2000))
-    }
-  }
-  saveToken(null)
-  useOnlineStore.getState().set({ status: 'error', error: 'Mất kết nối với phòng chơi.' })
-  return false
+  const saved = readSession()
+  if (!saved) return false
+  session = saved
+  since = -1
+  useOnlineStore.getState().set({ status: 'reconnecting', error: null })
+  await pollOnce()
+  return session !== null
+}
+
+// Quay lại tab: hỏi server ngay để bắt kịp ván.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && session) void pollOnce()
+  })
 }

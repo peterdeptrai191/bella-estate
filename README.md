@@ -1,6 +1,6 @@
 # Bella Estate
 
-Game cờ tỷ phú 3D chạy trên web, chủ đề "Vòng quanh thế giới" — React Three Fiber, Zustand, Tailwind; chơi online qua server Colyseus.
+Game cờ tỷ phú 3D chạy trên web, chủ đề "Vòng quanh thế giới" — React Three Fiber, Zustand, Tailwind; chơi online chạy trên Vercel (Function + Upstash Redis), giống Bella Poker.
 
 ```bash
 npm install
@@ -9,12 +9,10 @@ npm test           # Vitest
 npm run typecheck
 npm run simulate -- --seed 42   # giả lập 1 ván 4 người, in log
 npm run build
-
-# Chơi online (cần chạy server ở cửa sổ khác)
-npm run server:install   # lần đầu
-npm run server           # ws://localhost:2567
-npm run test:server
+npm run build:api   # sau khi sửa src/online: bundle lại api/estate.js
 ```
+
+`npm run dev` đã có sẵn API chơi online (lưu phòng trong bộ nhớ).
 
 Chơi online khi đã deploy: xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
