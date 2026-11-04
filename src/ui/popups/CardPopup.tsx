@@ -4,6 +4,7 @@ import { CARDS, type CardId } from '../../config/cards'
 import { useAnimationStore } from '../../store/animationStore'
 import { useUiStore } from '../../store/uiStore'
 import { useVisual } from '../../store/visualStore'
+import { playSound } from '../../audio/soundPlayer'
 import { act } from '../act'
 
 /** Biểu tượng và màu của từng thẻ (chỉ là trình bày). */
@@ -59,7 +60,10 @@ export function CardReveal() {
 
   useEffect(() => {
     if (!reveal) return
-    const timer = setTimeout(() => setFlipped(true), 120)
+    const timer = setTimeout(() => {
+      setFlipped(true)
+      playSound('cardFlip')
+    }, 120)
     return () => {
       clearTimeout(timer)
       setFlipped(false)

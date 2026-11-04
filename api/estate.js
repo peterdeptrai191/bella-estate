@@ -1605,11 +1605,19 @@ var VISUAL = {
     enabled: true,
     /** Font gộp Latin + tiếng Việt (Baloo 2, OFL) trong public/fonts. */
     font: "fonts/baloo2-800.woff",
-    fontSize: 0.15,
-    cornerFontSize: 0.2,
-    color: "#5b5466",
-    /** Khoảng cách từ mép ngoài ô vào trong (tỷ lệ chiều sâu ô). */
-    edgeInset: 0.16
+    fontSize: 0.2,
+    cornerFontSize: 0.25,
+    /** Chữ đậm màu, viền sáng quanh chữ để đọc rõ trên mọi màu ô. */
+    color: "#2d2a3e",
+    outlineColor: "#ffffff",
+    /** Độ dày viền chữ (tỷ lệ cỡ chữ). */
+    outlineWidth: 0.14,
+    lineHeight: 0.92,
+    /** Giãn chữ theo chiều dọc để bù phần bị "dẹt" khi nhìn nghiêng (1 = không giãn). */
+    stretch: 1.25,
+    /** Khoảng cách từ mép ngoài ô vào trong (tỷ lệ chiều sâu ô): ô thường / ô góc. */
+    edgeInset: 0.17,
+    cornerEdgeInset: 0.1
   },
   /** Nhãn tiền thuê trên các ô có chủ. */
   tags: {

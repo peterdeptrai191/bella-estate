@@ -25,19 +25,22 @@ export function TileLabels() {
         const c = Math.cos(t.rotationY)
         // Chiều "lên" của chữ mặc định là -z cục bộ của ô (hướng vào trong bàn cờ).
         const flip = -s * up[0] + -c * up[1] < 0
-        const [x, z] = localToBoard(t, 0, depth / 2 - depth * tileText.edgeInset)
+        const [x, z] = localToBoard(t, 0, depth / 2 - depth * (t.isCorner ? tileText.cornerEdgeInset : tileText.edgeInset))
         return (
           <group key={t.def.index} position={[x, y, z]} rotation-y={t.rotationY + (flip ? Math.PI : 0)}>
             <Text
               font={tileText.font}
               fontSize={t.isCorner ? tileText.cornerFontSize : tileText.fontSize}
               color={tileText.color}
+              outlineColor={tileText.outlineColor}
+              outlineWidth={`${tileText.outlineWidth * 100}%`}
               anchorX="center"
               anchorY="middle"
               textAlign="center"
-              maxWidth={width * 0.92}
-              lineHeight={1}
+              maxWidth={width * 0.94}
+              lineHeight={tileText.lineHeight}
               rotation-x={-Math.PI / 2}
+              scale={[1, tileText.stretch, 1]}
               raycast={() => null}
             >
               {t.def.name}

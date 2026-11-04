@@ -30,7 +30,7 @@ function PalmTree({ position, scale = 1 }: { position: [number, number, number];
 function Island() {
   const { colors } = useVisual()
   return (
-    <group position={[0.12, 0, 0.18]} scale={0.85}>
+    <group position={[0.12, 0, -0.12]} scale={0.85}>
       <mesh position={[0, 0, 0]} scale={[1, 0.22, 1]} receiveShadow castShadow>
         <sphereGeometry args={[0.48, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <Mat color={colors.sand} />
@@ -79,7 +79,7 @@ function Start() {
 function Festival() {
   const { props, playerColors } = useVisual()
   return (
-    <group>
+    <group position={[0, 0, -0.14]} scale={0.9}>
       <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[0.5, 0.55, 0.1, 24]} />
         <Mat color={props.paper} />
@@ -100,12 +100,12 @@ function Airport() {
   const { props } = useVisual()
   return (
     <group>
-      <mesh position={[0, 0.01, 0.12]} receiveShadow>
+      <mesh position={[0, 0.01, -0.02]} receiveShadow>
         <boxGeometry args={[1.2, 0.02, 0.32]} />
         <Mat color={props.pole} />
       </mesh>
       {[-0.4, -0.15, 0.1, 0.35].map((x) => (
-        <mesh key={x} position={[x, 0.022, 0.12]}>
+        <mesh key={x} position={[x, 0.022, -0.02]}>
           <boxGeometry args={[0.14, 0.005, 0.03]} />
           <Mat color={props.paper} />
         </mesh>
@@ -145,9 +145,9 @@ function Chance() {
 function Tax() {
   const { props } = useVisual()
   const stacks: Array<[number, number, number]> = [
-    [-0.12, 0, 0.02],
-    [0.1, 0, -0.06],
-    [0.04, 0, 0.14],
+    [-0.12, 0, -0.16],
+    [0.1, 0, -0.22],
+    [0.04, 0, -0.06],
   ]
   return (
     <group>
@@ -167,11 +167,11 @@ function Resort() {
   const { colors, props } = useVisual()
   return (
     <group>
-      <mesh position={[0, 0.012, 0.05]} receiveShadow>
-        <boxGeometry args={[0.6, 0.02, 0.38]} />
+      <mesh position={[-0.05, 0.012, -0.08]} receiveShadow>
+        <boxGeometry args={[0.5, 0.02, 0.3]} />
         <Mat color={colors.water} />
       </mesh>
-      <group position={[0.2, 0, -0.22]}>
+      <group position={[0.24, 0, -0.28]}>
         <mesh position={[0, 0.17, 0]} castShadow>
           <cylinderGeometry args={[0.01, 0.01, 0.34, 6]} />
           <Mat color={props.pole} />

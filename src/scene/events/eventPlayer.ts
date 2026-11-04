@@ -50,7 +50,12 @@ function moneyPoint(id: PlayerId | null): Vector3 {
 async function coins(from: PlayerId | null, to: PlayerId | null, event: GameEvent) {
   const start = moneyPoint(from)
   const end = moneyPoint(to)
-  await flyCoins(start, end, (i) => playSound('coin', { pitch: 1 + i * 0.06 }))
+  // Một tràng chip khi tiền bắt đầu bay và một tiếng khi tới nơi (không phát mỗi đồng xu — nghe như tiếng chít).
+  playSound('coin')
+  const last = visual().animation.coinCount - 1
+  await flyCoins(start, end, (i) => {
+    if (i === last) playSound('coinLand')
+  })
   apply(event)
 }
 
@@ -65,7 +70,7 @@ async function movePiece(event: Extract<GameEvent, { type: 'PLAYER_MOVED' }>) {
         const tile = (from + k) % BOARD_SIZE
         apply({ ...event, from: (from + k - 1) % BOARD_SIZE, to: tile, steps: 1 })
         const spot = restingSpot(playerId)
-        playSound('hop', { pitch: 0.95 + (k % 4) * 0.05 })
+        playSound('hop', { jitter: true })
         if (spot) await arcTo(playerId, spot[0], spot[1], 'hop')
       }
     } else {
