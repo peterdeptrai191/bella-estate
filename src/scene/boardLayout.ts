@@ -60,40 +60,59 @@ export function computeTileLayout(board: VisualConfig['board']): TileTransform[]
 }
 
 /** Hướng nhìn của camera (đơn vị) và vị trí camera ở khoảng cách `distance` quanh gốc. */
-export function cameraPosition(camera: VisualConfig['camera'], distance: number): [number, number, number] {
+export function cameraPosition(camera: Pick<VisualConfig['camera'], 'elevationDeg' | 'azimuthDeg'>, distance: number): [number, number, number] {
   const el = (camera.elevationDeg * Math.PI) / 180
   const az = (camera.azimuthDeg * Math.PI) / 180
   return [distance * Math.cos(el) * Math.sin(az), distance * Math.sin(el), distance * Math.cos(el) * Math.cos(az)]
 }
 
+/** Khung camera: zoom và độ lệch tâm theo trục "lên" của màn hình (đơn vị thế giới). */
+export interface CameraFrame {
+  zoom: number
+  offsetUp: number
+}
+
 /**
- * Zoom của camera orthographic để cả bàn cờ (tính cả đế và nhà cao nhất) vừa khung hình.
- * Chiếu 8 đỉnh khối bao lên mặt phẳng màn hình rồi so với kích thước khung (pixel).
+ * Khung camera orthographic để bàn cờ vừa khung hình.
+ * Chiếu 8 đỉnh khối bao lên mặt phẳng màn hình, lấy biên trên/dưới riêng (không đối xứng)
+ * rồi dời tâm camera cho bàn cờ nằm giữa. Màn hình thấp (điện thoại xoay ngang) dùng lề nhỏ hơn
+ * và chỉ chừa một phần chiều cao Landmark để bàn cờ to nhất có thể.
  */
-export function fitZoom(visual: VisualConfig, viewportWidth: number, viewportHeight: number): number {
+export function fitFrame(visual: VisualConfig, viewportWidth: number, viewportHeight: number): CameraFrame {
   const { board, camera, buildings } = visual
   const half = boardLength(board) / 2 + board.baseMargin
-  const top = board.tileHeight + buildings.landmarkHeight + buildings.houseSize
+  const top = board.tileHeight + (buildings.landmarkHeight + buildings.houseSize) * camera.fitHeadroom
   const bottom = -board.baseThickness
 
   const [px, py, pz] = cameraPosition(camera, 1)
   // Trục phải và trục lên của màn hình.
   const right = normalize([pz, 0, -px])
-  const forward: [number, number, number] = [-px, -py, -pz]
+  const forward: Vec3 = [-px, -py, -pz]
   const up = cross(right, forward)
 
   let maxX = 0
-  let maxY = 0
+  let minY = Infinity
+  let maxY = -Infinity
   for (const x of [-half, half]) {
     for (const z of [-half, half]) {
       for (const y of [top, bottom]) {
         maxX = Math.max(maxX, Math.abs(dot([x, y, z], right)))
-        maxY = Math.max(maxY, Math.abs(dot([x, y, z], up)))
+        const v = dot([x, y, z], up)
+        minY = Math.min(minY, v)
+        maxY = Math.max(maxY, v)
       }
     }
   }
-  const pad = camera.fitPadding
-  return Math.min(viewportWidth / (2 * maxX * pad), viewportHeight / (2 * maxY * pad))
+  const pad = viewportHeight < camera.compactHeight ? camera.fitPaddingCompact : camera.fitPadding
+  const zoom = Math.min(viewportWidth / (2 * maxX * pad), viewportHeight / ((maxY - minY) * pad))
+  return { zoom, offsetUp: (maxY + minY) / 2 }
+}
+
+/** Vector "lên" của màn hình trong toạ độ thế giới. */
+export function screenUp(camera: VisualConfig['camera']): Vec3 {
+  const [px, py, pz] = cameraPosition(camera, 1)
+  const right = normalize([pz, 0, -px])
+  return cross(right, [-px, -py, -pz])
 }
 
 type Vec3 = [number, number, number]

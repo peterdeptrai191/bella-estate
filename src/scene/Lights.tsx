@@ -11,7 +11,7 @@ export function Lights() {
   const invalidate = useThree((s) => s.invalidate)
   const reach = boardLength(board) / 2 + board.baseMargin + 1
   const sunPosition = cameraPosition(
-    { elevationDeg: lights.sun.elevationDeg, azimuthDeg: lights.sun.azimuthDeg, fitPadding: 1 },
+    { elevationDeg: lights.sun.elevationDeg, azimuthDeg: lights.sun.azimuthDeg },
     reach * 3,
   )
 

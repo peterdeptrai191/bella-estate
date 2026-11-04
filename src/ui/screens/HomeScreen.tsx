@@ -13,6 +13,7 @@ import { useUiStore, type Screen } from '../../store/uiStore'
 import { CoinIcon } from '../kit'
 import { GlobeArt, MapArt, RobotArt, ShopArt } from './Art'
 import { ProfileChip, SoundButton } from './ScreenFrame'
+import { FullscreenButton } from '../FullscreenButton'
 
 const ESTATE_LOGO = 'brand/bella-estate-logo.webp'
 const STUDIO_LOGO = 'brand/bella-game-studio.webp'
@@ -132,6 +133,7 @@ export function HomeScreen() {
         <div className="flex items-center gap-[0.6rem]">
           <ProfileChip />
           <SoundButton />
+          <FullscreenButton size="h-[2.8rem] w-[2.8rem]" />
         </div>
       </header>
 

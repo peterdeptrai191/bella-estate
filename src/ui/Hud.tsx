@@ -42,7 +42,7 @@ export function Hud() {
   // Người chơi trên máy này luôn ở góc dưới trái; các ghế khác xếp theo chiều kim đồng hồ.
   const localSeat = Math.max(0, view.players.findIndex((p) => p.id === humanId))
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden select-none">
+    <div className="safe-area pointer-events-none absolute overflow-hidden select-none">
       {view.players.map((p) => (
         <PlayerPanel
           key={p.id}

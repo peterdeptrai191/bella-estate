@@ -1,5 +1,6 @@
 /** Chữ lớn giữa màn hình, thanh trên cùng, màn hình kết quả, nhắc xoay ngang. */
 import { useEffect, useMemo, useState } from 'react'
+import { FullscreenButton } from '../FullscreenButton'
 import { setMuted, unlockAudio } from '../../audio/soundPlayer'
 import { ECONOMY } from '../../config/economy'
 import { SEAT_SKINS, skinById } from '../../config/skins'
@@ -71,6 +72,7 @@ export function TopBar() {
         >
           {muted ? '🔇' : '🔊'}
         </button>
+        <FullscreenButton />
         {import.meta.env.DEV && (
           <button
             className={`btn-3d px-[0.8rem] py-[0.1rem] text-[0.85rem] ${autoplay ? 'btn-pink' : 'btn-gray'}`}

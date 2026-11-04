@@ -19,6 +19,12 @@ export const VISUAL = {
     azimuthDeg: 45,
     /** Khoảng trống quanh bàn cờ khi tự co cho vừa khung (1 = sát mép). */
     fitPadding: 1.12,
+    /** Lề khi màn hình thấp (điện thoại xoay ngang): bàn cờ to hơn, HUD nằm ở 4 góc nên không che. */
+    fitPaddingCompact: 1.0,
+    /** Chiều cao khung (px) dưới mức này thì coi là màn hình thấp. */
+    compactHeight: 520,
+    /** Phần chiều cao nhà/Landmark được chừa khi co khung (1 = chừa đủ, 0 = bỏ qua). */
+    fitHeadroom: 0.5,
   },
 
   board: {

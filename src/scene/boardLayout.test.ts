@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VISUAL } from '../config/visual'
-import { boardLength, computeTileLayout, fitZoom, piecePlacement } from './boardLayout'
+import { boardLength, computeTileLayout, fitFrame, piecePlacement } from './boardLayout'
 
 const layout = computeTileLayout(VISUAL.board)
 
@@ -30,10 +30,16 @@ describe('Bố cục bàn cờ 3D', () => {
   })
 
   it('khung màn hình dọc cho zoom nhỏ hơn màn hình ngang', () => {
-    const desktop = fitZoom(VISUAL, 1280, 800)
-    const portrait = fitZoom(VISUAL, 390, 844)
+    const desktop = fitFrame(VISUAL, 1280, 800).zoom
+    const portrait = fitFrame(VISUAL, 390, 844).zoom
     expect(desktop).toBeGreaterThan(0)
     expect(portrait).toBeLessThan(desktop)
+  })
+
+  it('điện thoại xoay ngang (màn thấp) dùng lề nhỏ hơn nên bàn cờ to hơn', () => {
+    const phone = fitFrame(VISUAL, 800, 300).zoom
+    const roomy = fitFrame({ ...VISUAL, camera: { ...VISUAL.camera, compactHeight: 0 } }, 800, 300).zoom
+    expect(phone).toBeGreaterThan(roomy)
   })
 })
 
