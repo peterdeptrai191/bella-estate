@@ -2076,7 +2076,7 @@ function createApi(store, deps) {
   return async function handle(method, query, rawBody) {
     try {
       if (method === "GET") {
-        if (query.get("op") === "health") return { status: 200, body: { ok: true, storage: store?.mode ?? "unconfigured" } };
+        if (query.get("op") === "health") return { status: 200, body: { ok: true, storage: store?.mode ?? "unconfigured", onlineReady: store !== null } };
         const since = Number(query.get("since") ?? -1);
         return { status: 200, body: await poll(code(query.get("code")), token(query.get("token")), Number.isFinite(since) ? since : -1) };
       }
@@ -2186,10 +2186,25 @@ function redisStore(url, token2) {
   };
 }
 function storeFromEnv(env) {
-  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
-  const token2 = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
-  if (url && token2) return redisStore(url, token2);
+  const found = redisCredentials(env);
+  if (found) return redisStore(found.url, found.token);
   return env.VERCEL ? null : memoryStore();
+}
+function redisCredentials(env) {
+  const pairs = [
+    ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+    ["KV_REST_API_URL", "KV_REST_API_TOKEN"]
+  ];
+  for (const name of Object.keys(env)) {
+    if (name.endsWith("KV_REST_API_URL")) pairs.push([name, name.replace(/URL$/, "TOKEN")]);
+    if (name.endsWith("REDIS_REST_URL")) pairs.push([name, name.replace(/URL$/, "TOKEN")]);
+  }
+  for (const [urlName, tokenName] of pairs) {
+    const url = env[urlName];
+    const token2 = env[tokenName];
+    if (url && token2 && url.startsWith("https://")) return { url, token: token2 };
+  }
+  return null;
 }
 
 // src/online/vercel.ts

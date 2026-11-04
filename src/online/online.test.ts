@@ -5,7 +5,7 @@ import { humanPrompt } from '../game-core'
 import { NET, type JoinResponse, type RoomView } from '../net/protocol'
 import { createApi } from './handler'
 import { createRoom, joinRoom, randomCode, requestStart, tick, viewFor, type Rng } from './room'
-import { memoryStore } from './store'
+import { memoryStore, redisCredentials } from './store'
 
 /** RNG tất định cho test. */
 function testRng(seed = 1): Rng {
@@ -194,7 +194,18 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
   it('kiểm tra sống trả về loại kho', async () => {
     const { api } = setup()
     const r = await api('GET', new URLSearchParams({ op: 'health' }), null)
-    expect(r.body).toEqual({ ok: true, storage: 'memory' })
+    expect(r.body).toEqual({ ok: true, storage: 'memory', onlineReady: true })
+  })
+})
+
+describe('Nhận biến môi trường Redis', () => {
+  it('nhận tên chuẩn, tên của Vercel KV và tên có tiền tố riêng; bỏ token chỉ đọc', () => {
+    expect(redisCredentials({ UPSTASH_REDIS_REST_URL: 'https://a', UPSTASH_REDIS_REST_TOKEN: 't' })).toEqual({ url: 'https://a', token: 't' })
+    expect(redisCredentials({ KV_REST_API_URL: 'https://b', KV_REST_API_TOKEN: 't' })).toEqual({ url: 'https://b', token: 't' })
+    expect(
+      redisCredentials({ BELLA_KV_REST_API_URL: 'https://c', BELLA_KV_REST_API_TOKEN: 't', BELLA_KV_REST_API_READ_ONLY_TOKEN: 'r' }),
+    ).toEqual({ url: 'https://c', token: 't' })
+    expect(redisCredentials({ REDIS_URL: 'rediss://x' })).toBeNull()
   })
 })
 

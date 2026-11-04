@@ -121,7 +121,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
   return async function handle(method: string, query: URLSearchParams, rawBody: unknown): Promise<ApiResult> {
     try {
       if (method === 'GET') {
-        if (query.get('op') === 'health') return { status: 200, body: { ok: true, storage: store?.mode ?? 'unconfigured' } }
+        if (query.get('op') === 'health') return { status: 200, body: { ok: true, storage: store?.mode ?? 'unconfigured', onlineReady: store !== null } }
         const since = Number(query.get('since') ?? -1)
         return { status: 200, body: await poll(code(query.get('code')), token(query.get('token')), Number.isFinite(since) ? since : -1) }
       }

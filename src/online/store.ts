@@ -60,8 +60,29 @@ export function redisStore(url: string, token: string): RoomStore {
 
 /** Kho theo môi trường: có biến Upstash/Vercel KV thì dùng Redis; trên Vercel mà thiếu thì null (báo chưa cấu hình). */
 export function storeFromEnv(env: Record<string, string | undefined>): RoomStore | null {
-  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL
-  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN
-  if (url && token) return redisStore(url, token)
+  const found = redisCredentials(env)
+  if (found) return redisStore(found.url, found.token)
   return env.VERCEL ? null : memoryStore()
+}
+
+/**
+ * Tìm thông tin Redis REST trong biến môi trường. Ngoài tên chuẩn, Vercel cho đặt tiền tố riêng khi nối
+ * database (vd. `BELLA_KV_REST_API_URL`), nên nhận mọi cặp `<tiền tố>KV_REST_API_URL/TOKEN` hoặc
+ * `<tiền tố>REDIS_REST_URL/TOKEN`. Bỏ qua token chỉ đọc (READ_ONLY).
+ */
+export function redisCredentials(env: Record<string, string | undefined>): { url: string; token: string } | null {
+  const pairs: Array<[string, string]> = [
+    ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+    ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+  ]
+  for (const name of Object.keys(env)) {
+    if (name.endsWith('KV_REST_API_URL')) pairs.push([name, name.replace(/URL$/, 'TOKEN')])
+    if (name.endsWith('REDIS_REST_URL')) pairs.push([name, name.replace(/URL$/, 'TOKEN')])
+  }
+  for (const [urlName, tokenName] of pairs) {
+    const url = env[urlName]
+    const token = env[tokenName]
+    if (url && token && url.startsWith('https://')) return { url, token }
+  }
+  return null
 }
