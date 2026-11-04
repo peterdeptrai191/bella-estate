@@ -142,19 +142,19 @@ export const VISUAL = {
 
   /** Quân cờ (Kenney Mini Characters / Cube Pets, CC0). */
   pieces: {
-    /** Model cho người chơi 1–4. Muốn dùng thú: '/models/pets/animal-cat.glb', animal-dog, animal-panda, animal-fox. */
+    /** Model cho người chơi 1–4. Muốn dùng thú: 'models/pets/animal-cat.glb', animal-dog, animal-panda, animal-fox. */
     models: [
-      '/models/characters/character-female-b.glb',
-      '/models/characters/character-male-c.glb',
-      '/models/characters/character-female-a.glb',
-      '/models/characters/character-male-e.glb',
+      'models/characters/character-female-b.glb',
+      'models/characters/character-male-c.glb',
+      'models/characters/character-female-a.glb',
+      'models/characters/character-male-e.glb',
     ],
     /** Ảnh chân dung trên khung người chơi (chụp từ chính model ở trên). */
     avatars: [
-      '/avatars/character-female-b.png',
-      '/avatars/character-male-c.png',
-      '/avatars/character-female-a.png',
-      '/avatars/character-male-e.png',
+      'avatars/character-female-b.png',
+      'avatars/character-male-c.png',
+      'avatars/character-female-a.png',
+      'avatars/character-male-e.png',
     ],
     /** Chiều cao quân cờ (model được tự co về chiều cao này). */
     height: 0.62,

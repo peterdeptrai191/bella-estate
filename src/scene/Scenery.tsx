@@ -5,7 +5,7 @@ import type { Mesh, Object3D } from 'three'
 import { useVisual } from '../store/visualStore'
 import { centerTopY } from './boardLayout'
 
-const url = (model: string) => `/models/city/${model}.glb`
+const url = (model: string) => `models/city/${model}.glb`
 
 function Prop({ model, position, rotationY, scale }: { model: string; position: [number, number, number]; rotationY: number; scale: number }) {
   const { scene } = useGLTF(url(model))

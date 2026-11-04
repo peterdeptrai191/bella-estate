@@ -19,7 +19,7 @@ function load(file: string): Promise<AudioBuffer | null> {
   if (!pending) {
     const ctx = getContext()
     pending = ctx
-      ? fetch(`/sounds/${file}.mp3`)
+      ? fetch(`sounds/${file}.mp3`)
           .then((r) => r.arrayBuffer())
           .then((data) => ctx.decodeAudioData(data))
           .catch(() => null)
