@@ -1,0 +1,13 @@
+# Blueprint Render cho server multiplayer Bella Estate (Colyseus).
+# Render → New → Blueprint → chọn repo này là tự tạo dịch vụ theo file này.
+services:
+  - type: web
+    name: bella-estate-server
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix server ci
+    startCommand: npm --prefix server start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

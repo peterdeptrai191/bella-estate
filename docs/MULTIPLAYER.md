@@ -22,7 +22,9 @@ Mở 2 tab (hoặc 1 tab thường + 1 tab ẩn danh) → "Chơi cùng bạn" �
 
 Vercel chỉ chạy được phần web tĩnh, không giữ được kết nối WebSocket lâu dài, nên server cần một nơi khác (Render, Railway, Fly.io, VPS…).
 
-**Server (ví dụ Render, loại Web Service):**
+**Server trên Render (nhanh nhất):** Render → New → Blueprint → chọn repo `bella-estate`. File `render.yaml` ở gốc repo đã khai báo sẵn mọi thứ bên dưới. Gói free sẽ ngủ sau ~15 phút không ai vào; người đầu tiên vào lại phải chờ khoảng 30–60 giây.
+
+**Hoặc tạo tay (Render, loại Web Service):**
 
 - Kết nối repo GitHub, để Root Directory trống (server cần đọc `src/` ở gốc repo).
 - Build Command: `npm --prefix server ci`
