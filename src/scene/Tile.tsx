@@ -145,7 +145,7 @@ export function Tile({
         <group scale={props.scale}>
           <TileProps kind={def.kind} />
         </group>
-        <BuildingSet level={building?.level ?? 0} color={building?.color ?? colors.tile} width={w} />
+        <BuildingSet level={building?.level ?? 0} color={building?.color ?? colors.tile} width={w} group={def.group} cityName={def.name} />
       </group>
     </group>
   )

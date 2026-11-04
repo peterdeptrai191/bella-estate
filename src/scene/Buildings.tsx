@@ -1,4 +1,6 @@
+import type { ColorGroupId } from '../config/board'
 import { useVisual } from '../store/visualStore'
+import { CityLandmark, RegionalHouse } from './CityBuildings'
 import { Mat } from './Mat'
 import { Pop } from './Pop'
 import { useMountedFlag } from './useMountedFlag'
@@ -69,24 +71,52 @@ export function Landmark({ color }: { color: string }) {
  * Công trình trên một thành phố theo cấp: 1–3 nhà, 4 = Landmark. Nhà xếp dọc theo cạnh (trục x cục bộ).
  * Công trình xuất hiện sau lần render đầu (tức là vừa được xây) sẽ mọc lên có hiệu ứng nảy + bụi.
  */
-export function BuildingSet({ level, color, width }: { level: number; color: string; width: number }) {
+export function BuildingSet({
+  level,
+  color,
+  width,
+  group = null,
+  cityName = '',
+}: {
+  level: number
+  color: string
+  width: number
+  /** Nhóm màu (khu vực) → kiểu nhà nhỏ. */
+  group?: ColorGroupId | null
+  /** Tên thành phố → Landmark riêng (nếu có mẫu). */
+  cityName?: string
+}) {
   const { buildings: b } = useVisual()
   const mounted = useMountedFlag()
   if (level <= 0) return null
   if (level >= 4) {
     return (
       <Pop key="landmark" animate={mounted}>
-        <Landmark color={color} />
+        <CityLandmark cityName={cityName} color={color} fallback={<Landmark color={color} />} />
       </Pop>
     )
   }
-  const spacing = Math.min(b.houseSize * 1.35, width / level)
+  // Xếp nhà: 1 căn ở giữa, 2 căn hai bên, 3 căn thành hình tam giác (2 trước, 1 sau) để không dính vào nhau.
+  const gap = Math.min(b.houseSize * 1.2, width / 2.4)
+  const spots: Array<[number, number]> =
+    level === 1
+      ? [[0, 0]]
+      : level === 2
+        ? [
+            [-gap / 2, 0],
+            [gap / 2, 0],
+          ]
+        : [
+            [-gap / 2, b.houseSize * 0.2],
+            [gap / 2, b.houseSize * 0.2],
+            [0, -b.houseSize * 0.85],
+          ]
   return (
     <group>
-      {Array.from({ length: level }, (_, i) => (
-        <group key={`house-${i}`} position={[(i - (level - 1) / 2) * spacing, 0, 0]}>
+      {spots.map(([x, z], i) => (
+        <group key={`house-${i}`} position={[x, 0, z]} scale={level === 3 ? 0.88 : 1}>
           <Pop animate={mounted}>
-            <House color={color} />
+            {group ? <RegionalHouse group={group} color={color} /> : <House color={color} />}
           </Pop>
         </group>
       ))}

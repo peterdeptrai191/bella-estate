@@ -98,6 +98,37 @@ export const VISUAL = {
     window: '#a9d8f5',
   },
 
+  /** Landmark riêng của từng thành phố (scene/CityLandmarks.tsx): bảng màu vật liệu. */
+  landmarks: {
+    /** Phóng to/thu nhỏ toàn bộ Landmark riêng. */
+    scale: 1,
+    /** Đế Landmark tô màu người sở hữu: độ dày. */
+    plinth: 0.05,
+    iron: '#8b6b57',
+    stone: '#e3d0a2',
+    stoneDark: '#c9b184',
+    slate: '#4f5a6e',
+    glass: '#cfdbe8',
+    glassDark: '#9fb3c9',
+    cream: '#f1e6cc',
+    moss: '#86b86a',
+    water: '#7fd3e6',
+    gold: '#f2c14e',
+    clock: '#fbf8f2',
+    /** Vật liệu nhà nhỏ theo khu vực. */
+    adobe: '#d9a066',
+    adobeDark: '#7a4a2a',
+    wood: '#c8935f',
+    woodDark: '#8a5a3a',
+    colonial: '#f6d6a8',
+    whitewash: '#fbf6ec',
+    lacquer: '#b03a32',
+    paper: '#fbf3e4',
+    townhouse: '#f3ead8',
+    brick: '#a1593f',
+    balcony: '#ffffff',
+  },
+
   /** Màu mái nhà theo người chơi 1–4. */
   playerColors: ['#ff6f91', '#4da3ff', '#4cc983', '#ffb547'],
 
