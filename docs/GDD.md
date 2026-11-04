@@ -1,4 +1,4 @@
-# GDD: Game cờ tỷ phú 3D (tên tạm: "Đế Chế Tỷ Phú")
+# GDD: Bella Estate — game cờ tỷ phú 3D
 
 > Phiên bản 0.1. Các con số kinh tế là giá trị khởi điểm, sẽ cân bằng lại sau khi chơi thử.
 
@@ -48,6 +48,41 @@
 - 1 ô Thuế: nộp 10% tổng tài sản
 
 Mỗi cạnh bàn cờ gồm 1 góc và 7 ô, xen kẽ thành phố, khu du lịch và ô đặc biệt.
+
+### Nội dung 32 ô: chủ đề "Vòng quanh thế giới"
+
+Giá thành phố tăng dần theo chiều đi, mỗi nhóm màu là một khu vực. Mỗi cạnh có 5 thành phố, 1 khu du lịch và 1 ô đặc biệt, nên "độc quyền một cạnh" khó nhưng vẫn khả thi. Dữ liệu nằm ở `src/config/board.ts`.
+
+| # | Ô | Loại | # | Ô | Loại |
+| --- | --- | --- | --- | --- | --- |
+| 0 | Xuất Phát | Góc | 16 | Lễ Hội Thế Giới | Góc |
+| 1 | Cairo | Nhóm 1 | 17 | Istanbul | Nhóm 4 |
+| 2 | Nairobi | Nhóm 1 | 18 | Dubai | Nhóm 4 |
+| 3 | Cơ Hội | Đặc biệt | 19 | Thượng Hải | Nhóm 5 |
+| 4 | Cape Town | Nhóm 1 | 20 | Santorini | Khu du lịch |
+| 5 | Vịnh Hạ Long | Khu du lịch | 21 | Seoul | Nhóm 5 |
+| 6 | Jakarta | Nhóm 2 | 22 | Cơ Hội | Đặc biệt |
+| 7 | Bangkok | Nhóm 2 | 23 | Tokyo | Nhóm 5 |
+| 8 | Đảo Hoang | Góc | 24 | Sân Bay Quốc Tế | Góc |
+| 9 | Hà Nội | Nhóm 2 | 25 | Rome | Nhóm 6 |
+| 10 | Lima | Nhóm 3 | 26 | Berlin | Nhóm 6 |
+| 11 | Buenos Aires | Nhóm 3 | 27 | Paris | Nhóm 6 |
+| 12 | Maldives | Khu du lịch | 28 | Hawaii | Khu du lịch |
+| 13 | Rio de Janeiro | Nhóm 3 | 29 | London | Nhóm 7 |
+| 14 | Cơ Hội | Đặc biệt | 30 | Thuế Tài Sản | Đặc biệt |
+| 15 | Doha | Nhóm 4 | 31 | New York | Nhóm 7 |
+
+| Nhóm | Khu vực | Màu | Giá | Thành phố (Landmark) |
+| --- | --- | --- | --- | --- |
+| 1 | Châu Phi | #C9A27E | 60 | Cairo (Kim Tự Tháp Giza), Nairobi (Công viên Safari), Cape Town (Núi Bàn) |
+| 2 | Đông Nam Á | #8FD3E8 | 100 | Jakarta (Đài tưởng niệm Monas), Bangkok (Chùa Wat Arun), Hà Nội (Tháp Rùa – Hồ Gươm) |
+| 3 | Nam Mỹ | #F4A7C0 | 140 | Lima (Quảng trường Plaza Mayor), Buenos Aires (Đài Obelisco), Rio de Janeiro (Tượng Chúa Cứu Thế) |
+| 4 | Trung Đông | #F7B267 | 180 | Doha (Bảo tàng Nghệ thuật Hồi giáo), Istanbul (Hagia Sophia), Dubai (Tháp Burj Khalifa) |
+| 5 | Đông Á | #EF6F6C | 220 | Thượng Hải (Tháp Minh Châu Phương Đông), Seoul (Tháp N Seoul), Tokyo (Tháp Tokyo) |
+| 6 | Châu Âu | #F9D56E | 260 | Rome (Đấu trường Colosseum), Berlin (Cổng Brandenburg), Paris (Tháp Eiffel) |
+| 7 | Biểu tượng toàn cầu | #5B7FDB | 320 | London (Tháp đồng hồ Big Ben), New York (Tượng Nữ thần Tự do) |
+
+4 Khu Du Lịch (giá 200, màu xanh ngọc #4FC3A1): Vịnh Hạ Long, Maldives, Santorini, Hawaii. Mô tả ngắn của từng ô nằm trong `board.ts`.
 
 ## 4. Kinh tế
 
@@ -182,7 +217,7 @@ Ngoài phạm vi MVP: chat, bạn bè, giải đấu, giao dịch đất giữa 
 
 ## 13. Câu hỏi còn mở
 
-- Tên thành phố: dùng tên thật (Hà Nội, Tokyo…) hay tên giả tưởng?
+- ~~Tên thành phố~~: đã chốt dùng tên thật, chủ đề "Vòng quanh thế giới" (mục 3).
 - Có cho phép trao đổi đất giữa người chơi không?
 - Ván chơi với bot có dùng chung kinh tế vàng với PvP không?
 - Mục tiêu cuối là chỉ web hay đóng gói app lên store?

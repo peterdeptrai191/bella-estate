@@ -1,13 +1,16 @@
 /** Chữ lớn giữa màn hình, thanh trên cùng, màn hình kết quả, nhắc xoay ngang. */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { setMuted, unlockAudio } from '../../audio/soundPlayer'
 import { ECONOMY } from '../../config/economy'
+import { SEAT_SKINS, skinById } from '../../config/skins'
 import { describeEvent, standings, type WinReason } from '../../game-core'
 import { useAnimationStore } from '../../store/animationStore'
 import { useGameStore } from '../../store/gameStore'
+import { useProfileStore } from '../../store/profileStore'
 import { useUiStore } from '../../store/uiStore'
 import { useVisual } from '../../store/visualStore'
 import { Avatar, Modal, Money } from '../kit'
+import { exitToMenu } from '../matchSetup'
 
 export function Banners() {
   const banners = useUiStore((s) => s.banners)
@@ -40,11 +43,20 @@ export function TopBar() {
   const head = useAnimationStore((s) => s.queue[0])
   const autoplay = useUiStore((s) => s.autoplayHuman)
   const [muted, setMutedState] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const mode = useGameStore((s) => s.mode)
   if (!game) return null
   const caption = head ? describeEvent(head.event, game) : null
   return (
     <div className="pointer-events-none absolute top-[0.8rem] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-[0.4rem]">
       <div className="pointer-events-auto flex items-center gap-[0.5rem]">
+        <button
+          aria-label="Thoát ván"
+          className="btn-3d btn-pink flex h-[2.2rem] items-center justify-center px-[0.8rem] text-[0.95rem]"
+          onClick={() => setConfirmExit(true)}
+        >
+          Thoát
+        </button>
         <span className="rounded-full bg-ink/80 px-[1rem] py-[0.15rem] text-[1.15rem] font-extrabold text-white shadow-md tabular-nums">
           Vòng {Math.min(game.round, ECONOMY.maxRounds)}/{ECONOMY.maxRounds}
         </span>
@@ -69,6 +81,21 @@ export function TopBar() {
           </button>
         )}
       </div>
+      {confirmExit && (
+        <Modal title="Thoát ván?" ribbon="#f2437a" onClose={() => setConfirmExit(false)} className="w-[24rem]" layer="z-50">
+          <p className="text-center text-[1.1rem] text-stone-600">
+            {mode === 'online' ? 'Bạn sẽ rời phòng; bot sẽ chơi thay ghế của bạn.' : 'Ván đang chơi sẽ không được lưu.'}
+          </p>
+          <div className="mt-[0.9rem] flex justify-center gap-[0.8rem]">
+            <button className="btn-3d btn-gray px-[1.4rem] py-[0.4rem] text-[1.1rem]" onClick={() => setConfirmExit(false)}>
+              Ở lại
+            </button>
+            <button className="btn-3d btn-pink px-[1.4rem] py-[0.4rem] text-[1.1rem]" onClick={() => void exitToMenu()}>
+              Về Menu
+            </button>
+          </div>
+        </Modal>
+      )}
       {caption && (
         <div className="max-w-[46rem] truncate rounded-full bg-white/80 px-[1rem] py-[0.1rem] text-[0.95rem] font-semibold text-stone-600 shadow">
           {caption}
@@ -86,18 +113,29 @@ const WIN_TEXT: Record<WinReason, string> = {
   ROUND_LIMIT: 'Tài sản cao nhất khi hết vòng',
 }
 
-export function ResultModal({ onRestart }: { onRestart: () => void }) {
+export function ResultModal({ onRestart, onMenu }: { onRestart: () => void; onMenu: () => void }) {
   const view = useAnimationStore((s) => s.view)
   const game = useGameStore((s) => s.game)
   const humanId = useGameStore((s) => s.humanId)
-  const { playerColors, pieces } = useVisual()
+  const { playerColors } = useVisual()
+  const seats = useGameStore((s) => s.seats)
   const rows = useMemo(() => {
     if (!game || game.phase !== 'finished') return []
     // Người thắng luôn đứng đầu (thắng sớm không nhất thiết là người giàu nhất).
     return [...standings(game)].sort((a, b) => Number(b.playerId === game.winner) - Number(a.playerId === game.winner))
   }, [game])
-  if (!view?.winner || !game || game.phase !== 'finished') return null
-  const won = view.winner === humanId
+  const matchId = useGameStore((s) => s.matchId)
+  const finished = Boolean(view?.winner) && game?.phase === 'finished'
+  const won = finished && view?.winner === humanId
+  const [earned, setEarned] = useState(0)
+  // Thưởng Vàng sau trận (GDD mục 9) — mỗi ván một lần.
+  useEffect(() => {
+    if (!finished || !humanId) return
+    const amount = useProfileStore.getState().reward(matchId, won)
+    // oxlint-disable-next-line react/set-state-in-effect -- ghi ví (hệ thống ngoài) rồi hiện số Vàng vừa nhận
+    if (amount > 0) setEarned(amount)
+  }, [finished, humanId, matchId, won])
+  if (!finished || !view?.winner || !game) return null
   return (
     <Modal title={won ? 'Chiến thắng!' : 'Thất bại'} ribbon={won ? '#57c04a' : '#2fa7e6'} className="w-[30rem]" layer="z-50">
       <div className="mb-[0.6rem] text-center text-[1.15rem] font-bold text-stone-500">{game.winReason && WIN_TEXT[game.winReason]}</div>
@@ -119,7 +157,7 @@ export function ResultModal({ onRestart }: { onRestart: () => void }) {
             >
               <span>{k === 0 ? '🏆' : k + 1}</span>
               <span className="flex items-center gap-[0.5rem]">
-                <Avatar src={pieces.avatars[seat % pieces.avatars.length]} color={playerColors[seat % playerColors.length]} className="h-[1.8rem] w-[1.8rem] border-[0.1rem]" />
+                <Avatar src={skinById(seats[row.playerId]?.skin ?? SEAT_SKINS[seat % SEAT_SKINS.length]).avatar} color={playerColors[seat % playerColors.length]} className="h-[1.8rem] w-[1.8rem] border-[0.1rem]" />
                 {player.name}
                 {row.bankrupt && <span className="text-[0.85rem] text-rose-400">phá sản</span>}
               </span>
@@ -128,9 +166,17 @@ export function ResultModal({ onRestart }: { onRestart: () => void }) {
           )
         })}
       </div>
-      <div className="mt-[1rem] flex justify-center">
-        <button className="btn-3d btn-blue px-[2.4rem] py-[0.5rem] text-[1.3rem]" onClick={onRestart}>
-          Chơi ván mới
+      {earned > 0 && (
+        <div className="mt-[0.7rem] flex items-center justify-center gap-[0.4rem] text-[1.25rem] font-extrabold text-amber-600">
+          +<Money amount={earned} /> Vàng
+        </div>
+      )}
+      <div className="mt-[0.8rem] flex justify-center gap-[0.8rem]">
+        <button className="btn-3d btn-gray px-[1.6rem] py-[0.5rem] text-[1.2rem]" onClick={onMenu}>
+          Về Menu
+        </button>
+        <button className="btn-3d btn-blue px-[2rem] py-[0.5rem] text-[1.2rem]" onClick={onRestart}>
+          Chơi lại
         </button>
       </div>
     </Modal>

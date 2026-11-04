@@ -31,8 +31,12 @@ export interface TurnDeadline {
   endsAt: number
 }
 
+export type Screen = 'home' | 'bots' | 'friends' | 'lobby' | 'shop' | 'maps' | 'game'
+
 /** Trạng thái thuần giao diện — không chứa luật chơi. */
 interface UiStore {
+  screen: Screen
+  setScreen: (screen: Screen) => void
   /** Ô đang xem thông tin (bấm vào ô). */
   selectedTile: number | null
   pick: BoardPick | null
@@ -58,6 +62,8 @@ let bannerId = 1
 let closeCurrentCard: (() => void) | null = null
 
 export const useUiStore = create<UiStore>((set, get) => ({
+  screen: 'home',
+  setScreen: (screen) => set({ screen, selectedTile: null }),
   selectedTile: null,
   pick: null,
   banners: [],

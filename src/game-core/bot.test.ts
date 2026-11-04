@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BOTS } from '../config/bots'
+import { BOT_LEVELS, BOTS } from '../config/bots'
 import { ECONOMY } from '../config/economy'
 import { chooseBotAction } from './bot'
 import { isLegal } from './legalActions'
@@ -21,8 +21,64 @@ function landOnTile(state: GameState, from: number, tile: number): GameState {
   return applyAction(s, { type: 'MOVE', playerId: pid(s) }).state
 }
 
+describe('Bot cả 3 mức', () => {
+  it.each(BOT_LEVELS.flatMap((level) => [1, 2, 3].map((seed) => [level, seed] as const)))(
+    'mức %s, seed %i: ván toàn bot luôn chơi hết, mọi quyết định hợp lệ',
+    (level, seed) => {
+      let state = newGame(2 + (seed % 3), seed)
+      for (let step = 0; step < 20_000 && state.phase === 'playing'; step++) {
+        const action = chooseBotAction(state, level)
+        expect(action).not.toBeNull()
+        if (!action) break
+        expect(isLegal(state, action)).toBe(true)
+        state = applyAction(state, action).state
+      }
+      expect(state.phase).toBe('finished')
+    },
+  )
+
+  it('bot Dễ mua khoảng 60% số lần có thể mua', () => {
+    let bought = 0
+    let total = 0
+    for (let seed = 1; seed <= 300; seed++) {
+      const state = patch(landOnTile(newGame(2, seed), 0, 6), (g) => {
+        g.rngState = seed * 7919
+      })
+      total++
+      if (chooseBotAction(state, 'easy')?.type === 'BUY') bought++
+    }
+    expect(bought / total).toBeGreaterThan(0.48)
+    expect(bought / total).toBeLessThan(0.72)
+  })
+
+  it('bot Khó chấp nhận ít tiền dự trữ để chặn đối thủ sắp gom trọn nhóm; bot Thường thì không', () => {
+    let state = newGame(2, 1)
+    state = patch(state, (g) => {
+      g.tiles[7] = { owner: g.players[1].id, level: 0 }
+      g.tiles[9] = { owner: g.players[1].id, level: 0 }
+    })
+    state = landOnTile(state, 0, 6)
+    state = patch(state, (g) => {
+      g.players[0].money = ECONOMY.groupPrices.lightBlue + BOTS.hard.strategicReserve + 10
+    })
+    expect(chooseBotAction(state, 'hard')).toMatchObject({ type: 'BUY' })
+    expect(chooseBotAction(state, 'normal')).toMatchObject({ type: 'END_TURN' })
+  })
+
+  it('bot Khó mua lại để phá thế độc quyền nhóm màu của đối thủ đang có 2 nhóm', () => {
+    let state = newGame(2, 1)
+    state = patch(state, (g) => {
+      const opp = g.players[1].id
+      for (const i of [1, 2, 4, 6, 7, 9]) g.tiles[i] = { owner: opp, level: 0 }
+    })
+    state = landOnTile(state, 0, 6)
+    state = applyAction(state, { type: 'PAY_RENT', playerId: pid(state) }).state
+    expect(chooseBotAction(state, 'hard')).toMatchObject({ type: 'BUYOUT' })
+  })
+})
+
 describe('Bot mức Thường', () => {
-  it.each([1, 2, 3, 4, 5, 6])('seed %i: ván toàn bot luôn chơi hết, mọi quyết định đều hợp lệ', (seed) => {
+  it.each([4, 5, 6])('seed %i: ván toàn bot luôn chơi hết, bất biến luôn đúng', (seed) => {
     let state = newGame(2 + (seed % 3), seed)
     for (let step = 0; step < 20_000 && state.phase === 'playing'; step++) {
       const action = chooseBotAction(state)

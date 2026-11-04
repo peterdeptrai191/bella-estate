@@ -41,10 +41,20 @@ describe('Bàn cờ (GDD mục 3)', () => {
     }
   })
 
-  it('Khu Du Lịch giá 200, thành phố đặt tên tạm "Thành phố 1..20"', () => {
+  it('Khu Du Lịch giá 200; mỗi thành phố có tên thật, Landmark và mô tả (chủ đề Vòng quanh thế giới)', () => {
+    expect(BOARD.filter((t) => t.kind === 'RESORT').map((t) => t.name)).toEqual(['Vịnh Hạ Long', 'Maldives', 'Santorini', 'Hawaii'])
     expect(BOARD.filter((t) => t.kind === 'RESORT').every((t) => t.price === ECONOMY.resort.price)).toBe(true)
-    expect(BOARD.filter((t) => t.kind === 'CITY').map((t) => t.name)).toEqual(
-      Array.from({ length: 20 }, (_, i) => `Thành phố ${i + 1}`),
-    )
+    const cities = BOARD.filter((t) => t.kind === 'CITY')
+    expect(cities.map((t) => t.name)).toEqual([
+      'Cairo', 'Nairobi', 'Cape Town', 'Jakarta', 'Bangkok', 'Hà Nội', 'Lima', 'Buenos Aires', 'Rio de Janeiro', 'Doha',
+      'Istanbul', 'Dubai', 'Thượng Hải', 'Seoul', 'Tokyo', 'Rome', 'Berlin', 'Paris', 'London', 'New York',
+    ])
+    expect(cities.every((t) => t.landmark && t.description)).toBe(true)
+    expect(new Set(BOARD.map((t) => t.name)).size).toBe(BOARD_SIZE - 2) // 3 ô Cơ Hội trùng tên
+  })
+
+  it('giá thành phố tăng dần theo chiều đi', () => {
+    const prices = BOARD.filter((t) => t.kind === 'CITY').map((t) => t.price ?? 0)
+    expect(prices).toEqual([...prices].sort((a, b) => a - b))
   })
 })

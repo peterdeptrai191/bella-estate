@@ -42,4 +42,5 @@ export {
   standings,
 } from './valuation'
 export { isEarthquakeTarget } from './cards'
-export { chooseBotAction } from './bot'
+export { chooseBotAction, type BotLevel } from './bot'
+export { autoAction, humanPrompt, type HumanPrompt } from './flow'

@@ -11,7 +11,7 @@ import { useUiStore } from '../store/uiStore'
 import { PlayerPanel } from './hud/PlayerPanel'
 import { Banners, ResultModal, RotateHint, TopBar } from './hud/Overlays'
 import { PromptLayer } from './hud/PromptLayer'
-import { startNewMatch } from './matchSetup'
+import { exitToMenu, playAgain } from './matchSetup'
 import { CardReveal } from './popups/CardPopup'
 import { TileInfo } from './popups/TileInfo'
 
@@ -33,19 +33,25 @@ export function Hud() {
   const game = useGameStore((s) => s.game)
   const humanId = useGameStore((s) => s.humanId)
   const deadline = useUiStore((s) => s.deadline)
+  const seats = useGameStore((s) => s.seats)
 
   useEffect(() => startMatchDriver(), [])
 
   if (!view || !game) return <RotateHint />
+  const isBotSeat = (id: string) => seats[id]?.kind === 'bot'
+  // Người chơi trên máy này luôn ở góc dưới trái; các ghế khác xếp theo chiều kim đồng hồ.
+  const localSeat = Math.max(0, view.players.findIndex((p) => p.id === humanId))
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden select-none">
       {view.players.map((p) => (
         <PlayerPanel
           key={p.id}
           player={p}
+          corner={(p.seat - localSeat + 4) % 4}
           active={p.id === view.currentPlayerId && !view.winner}
           isYou={p.id === humanId}
-          isBot={game.players.find((g) => g.id === p.id)?.isBot ?? false}
+          isBot={isBotSeat(p.id)}
+          offline={seats[p.id]?.connected === false}
           deadline={deadline?.playerId === p.id ? deadline : null}
         />
       ))}
@@ -55,7 +61,7 @@ export function Hud() {
       <Banners />
       <CardReveal />
       <TileInfo />
-      <ResultModal onRestart={() => startNewMatch()} />
+      <ResultModal onRestart={playAgain} onMenu={() => void exitToMenu()} />
       <RotateHint />
     </div>
   )

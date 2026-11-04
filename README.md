@@ -1,6 +1,6 @@
-# Bella Monopoly
+# Bella Estate
 
-Game cờ tỷ phú 3D chạy trên web — React Three Fiber, Zustand, Tailwind.
+Game cờ tỷ phú 3D chạy trên web, chủ đề "Vòng quanh thế giới" — React Three Fiber, Zustand, Tailwind; chơi online qua server Colyseus.
 
 ```bash
 npm install
@@ -9,7 +9,14 @@ npm test           # Vitest
 npm run typecheck
 npm run simulate -- --seed 42   # giả lập 1 ván 4 người, in log
 npm run build
+
+# Chơi online (cần chạy server ở cửa sổ khác)
+npm run server:install   # lần đầu
+npm run server           # ws://localhost:2567
+npm run test:server
 ```
+
+Chơi online khi đã deploy: xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 - Luật chơi: [docs/GDD.md](docs/GDD.md)
 - Quy tắc kiến trúc & quy ước code: [CLAUDE.md](CLAUDE.md)

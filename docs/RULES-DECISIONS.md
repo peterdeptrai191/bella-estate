@@ -4,7 +4,7 @@ Những điểm GDD chưa nói rõ, đã được chọn khi viết `src/game-co
 
 | # | Chủ đề | Cách đang làm | File test |
 | --- | --- | --- | --- |
-| 1 | Bố cục bàn cờ | Góc: 0 Xuất Phát, 8 Đảo Hoang, 16 Lễ Hội, 24 Sân Bay. Mỗi cạnh 5 thành phố + 1 Khu Du Lịch + 1 ô đặc biệt (Cơ Hội ở cạnh 0–2, Thuế ở cạnh 3). Nhóm Xanh nhạt và Cam nằm vắt qua góc. | `config/board.test.ts` |
+| 1 | Bố cục bàn cờ | Chủ đề "Vòng quanh thế giới" (GDD mục 3). Góc: 0 Xuất Phát, 8 Đảo Hoang, 16 Lễ Hội Thế Giới, 24 Sân Bay Quốc Tế. Mỗi cạnh 5 thành phố + 1 Khu Du Lịch + 1 ô đặc biệt (Cơ Hội ở ô 3, 14, 22; Thuế Tài Sản ở ô 30). Nhóm Đông Nam Á (6, 7, 9) và Trung Đông (15, 17, 18) nằm vắt qua góc. | `config/board.test.ts` |
 | 2 | Xây trong một lần dừng | Mỗi lần dừng trên đất mình được xây liên tiếp nhiều nhà (đủ tiền là được). | `property.test.ts` |
 | 3 | Landmark | Cần đủ 3 nhà, và **không** xây được trong cùng lần dừng vừa mua/mua lại ô. Phải dừng lại lần sau. | `property.test.ts` |
 | 4 | Đảo Hoang | Dừng ở ô Đảo Hoang = bị kẹt (như bị đưa ra đảo). Sau 3 lần tung trượt thì lượt sau tự do. Thoát bằng đôi thì đi luôn nhưng **không** được tung thêm. | `island.test.ts` |
@@ -26,3 +26,17 @@ Những điểm GDD chưa nói rõ, đã được chọn khi viết `src/game-co
 ## Ghi chú cân bằng (từ giả lập)
 
 200 ván với người chơi chọn **ngẫu nhiên** (`npm run simulate`): ~94% kết thúc do hết 30 vòng, ~4% độc quyền Khu Du Lịch, ~1% độc quyền cạnh, ~1,5% sống sót cuối, chưa ván nào thắng bằng 3 nhóm màu. Người chơi ngẫu nhiên chơi kém nên số liệu chỉ để tham khảo, cần chạy lại khi có bot AI (GDD mục 7).
+
+## Chơi online (server, `server/`)
+
+Không phải luật chơi (luật vẫn chỉ ở game-core), nhưng là các lựa chọn khi yêu cầu chưa nói rõ:
+
+| # | Chủ đề | Cách đang làm | File test |
+| --- | --- | --- | --- |
+| O1 | Phòng riêng | Chủ phòng chọn 2–4 người. Đủ người thì tự bắt đầu; chủ phòng (người tạo) bấm "Bắt đầu" sớm được khi đã có ít nhất 2 người, ván chơi với số người đang có (không thêm bot). | `server/src/MatchSession.test.ts` |
+| O2 | Ghép nhanh | Bàn 4 ghế. Đủ 4 người thì bắt đầu ngay; quá 30 giây thì thêm bot (mức Thường) cho đủ 4 ghế, kể cả khi mới có 1 người. | như trên |
+| O3 | Trùng tên / skin | Người vào sau trùng tên thì thêm số ("Bạn 2"); trùng skin thì đổi sang skin mặc định chưa ai dùng, để phân biệt quân. | như trên |
+| O4 | Mất kết nối | Giữ chỗ 60 giây, bot (mức Thường) chơi thay ngay trong lúc đó. Hết 60 giây hoặc tự thoát thì ghế giao hẳn cho bot đến hết ván. | như trên |
+| O5 | Nhịp lượt | Server tự làm các bước hiển nhiên (đi quân, trả thuê khi không có Lá Chắn, kết thúc lượt khi không còn gì làm) và chờ đủ thời gian animation ước lượng trước khi cho bot đi tiếp / bắt đầu tính 20 giây của người chơi. | như trên |
+| O6 | Ngẫu nhiên | Trước mỗi action server thay trạng thái RNG bằng số ngẫu nhiên thật (crypto); state gửi cho client không kèm trạng thái RNG. | như trên |
+| O7 | Thưởng Vàng | Thắng +100, thua +30 (GDD mục 9), cả offline lẫn online, mỗi ván một lần. Chưa có tài khoản nên Vàng và skin lưu trong trình duyệt. | — |

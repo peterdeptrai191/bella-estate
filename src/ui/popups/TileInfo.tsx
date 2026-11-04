@@ -1,5 +1,5 @@
 /** Bấm vào ô bất kỳ: chủ sở hữu, cấp nhà, tiền thuê hiện tại (lấy theo view đang hiển thị). */
-import { BOARD, COLOR_GROUPS, type TileKind } from '../../config/board'
+import { BOARD, COLOR_GROUPS } from '../../config/board'
 import { ECONOMY } from '../../config/economy'
 import { buyoutPrice, formatMoney, LANDMARK_LEVEL, rentFor, type Ownership } from '../../game-core'
 import { useAnimationStore } from '../../store/animationStore'
@@ -9,14 +9,6 @@ import { LevelIcon, Modal, Money } from '../kit'
 
 const LEVEL_NAMES = ['Đất trống', '1 nhà', '2 nhà', '3 nhà', 'Landmark']
 
-const SPECIAL_TEXT: Partial<Record<TileKind, string>> = {
-  START: `Đi qua nhận ${formatMoney(ECONOMY.passStartBonus)}. Dừng đúng ô được xây 1 nhà miễn phí.`,
-  ISLAND: `Bị kẹt tối đa ${ECONOMY.island.maxTurns} lượt. Thoát bằng cách tung đôi, trả ${formatMoney(ECONOMY.island.escapeFee)} hoặc dùng thẻ Ra Đảo.`,
-  FESTIVAL: `Dừng ở đây: chọn một thành phố của bạn tổ chức Lễ Hội, tiền thuê x${ECONOMY.festivalRentMultiplier}.`,
-  AIRPORT: `Lượt sau được bay tới bất kỳ ô nào (phí ${formatMoney(ECONOMY.airport.flightFee)}).`,
-  CHANCE: 'Rút một thẻ Cơ Hội.',
-  TAX: `Nộp ${Math.round(ECONOMY.taxRate * 100)}% tổng tài sản cho ngân hàng.`,
-}
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -58,7 +50,7 @@ export function TileInfo() {
                 <LevelIcon level={def.kind === 'RESORT' ? -1 : tile.level} color={ownerColor} className="h-[5.2rem] w-full" />
               </div>
               <div className="leading-tight">
-                <div className="text-[0.95rem] text-stone-500">{def.kind === 'RESORT' ? 'Khu Du Lịch' : `Nhóm ${group?.name ?? ''}`}</div>
+                <div className="text-[0.95rem] text-stone-500">{def.kind === 'RESORT' ? 'Khu Du Lịch' : group?.name}</div>
                 <div className="text-[1.25rem] font-extrabold" style={{ color: ownerView ? ownerColor : undefined }}>
                   {ownerView ? ownerView.name : 'Chưa có chủ'}
                 </div>
@@ -67,7 +59,13 @@ export function TileInfo() {
               </div>
             </div>
           )}
-          {isProperty ? (
+          <p className="mb-[0.5rem] text-center text-[1.05rem] leading-snug text-stone-500 italic">{def.description}</p>
+          {def.landmark && (
+            <p className="mb-[0.4rem] text-center text-[0.95rem] text-stone-500">
+              Landmark: <b className="text-ink">{def.landmark}</b>
+            </p>
+          )}
+          {isProperty && (
             <div>
               {tile.owner && (
                 <Row label="Tiền thuê hiện tại">
@@ -107,8 +105,6 @@ export function TileInfo() {
                 </p>
               )}
             </div>
-          ) : (
-            <p className="text-center text-[1.15rem] leading-snug text-stone-600">{SPECIAL_TEXT[def.kind]}</p>
           )}
     </Modal>
   )

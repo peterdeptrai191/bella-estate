@@ -5,10 +5,9 @@
  * Game-core vẫn không chờ ai: driver chỉ quyết định KHI NÀO gửi action tiếp theo.
  */
 import { ECONOMY } from '../config/economy'
-import { currentPlayer, getTimeoutAction, GameRuleError, type GameAction, type GameState } from '../game-core'
+import { autoAction, currentPlayer, getTimeoutAction, GameRuleError, type GameAction, type GameState } from '../game-core'
 import { useAnimationStore } from './animationStore'
 import { useGameStore } from './gameStore'
-import { autoAction } from './match'
 import { useUiStore } from './uiStore'
 import { useVisualStore } from './visualStore'
 
@@ -31,8 +30,10 @@ export function startMatchDriver(): () => void {
   const evaluate = () => {
     clearTimeout(timer)
     timer = undefined
-    const { game, humanId, actionCount } = useGameStore.getState()
+    const { game, humanId, actionCount, mode, seats } = useGameStore.getState()
     const ui = useUiStore.getState()
+    // Online: server lo bot, hết giờ và nhịp lượt; đồng hồ lấy từ tin của server.
+    if (mode === 'online') return
     if (!game || game.phase !== 'playing') {
       if (ui.deadline) ui.setDeadline(null)
       return
@@ -51,7 +52,7 @@ export function startMatchDriver(): () => void {
       ui.setDeadline({ playerId: me.id, startedAt: now, endsAt: now + ECONOMY.turnTimeLimitSec * ui.turnTimeScale * 1000 })
     }
 
-    const auto = autoAction(game, controller)
+    const auto = autoAction(game, (id) => id === controller, (id) => seats[id]?.botLevel ?? 'normal')
     if (auto) {
       timer = setTimeout(() => dispatchIfCurrent(game, auto), (isHuman ? a.autoActionDelay : a.botThinkDelay) * 1000)
       return

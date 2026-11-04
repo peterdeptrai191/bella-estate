@@ -20,6 +20,8 @@ interface AnimationStore {
   /** Áp ngay một event lên view (event player gọi ở đúng thời điểm trong animation). */
   applyToView: (event: GameEvent) => void
   reset: (state: GameState) => void
+  /** Về trang chủ: không còn ván nào trên bàn cờ. */
+  clear: () => void
 }
 
 let nextId = 1
@@ -32,6 +34,7 @@ export const useAnimationStore = create<AnimationStore>((set) => ({
   completeHead: () => set((s) => ({ queue: s.queue.slice(1) })),
   applyToView: (event) => set((s) => (s.view ? { view: applyEventToView(s.view, event) } : s)),
   reset: (state) => set({ view: viewFromGame(state), queue: [] }),
+  clear: () => set({ view: null, queue: [] }),
 }))
 
 /** Còn animation đang chờ phát? UI dùng để giãn nhịp tự chơi. */

@@ -7,8 +7,9 @@ import gsap from 'gsap'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import { Box3, type Group, type Mesh, type Object3D } from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import { VISUAL } from '../config/visual'
+import { SEAT_SKINS, skinById } from '../config/skins'
 import { useAnimationStore } from '../store/animationStore'
+import { useGameStore } from '../store/gameStore'
 import { useVisual } from '../store/visualStore'
 import { computeTileLayout, piecePlacement, tileTopY } from './boardLayout'
 import { Mat } from './Mat'
@@ -17,18 +18,18 @@ import { controlled, pieceRefs } from './pieceControl'
 
 export function Pieces() {
   const view = useAnimationStore((s) => s.view)
+  const seats = useGameStore((s) => s.seats)
   const visual = useVisual()
   const layout = useMemo(() => computeTileLayout(visual.board), [visual.board])
   if (!view) return null
   const placement = piecePlacement(view.players, layout, visual.pieces)
-  const models = visual.pieces.models
   return (
     <>
       {view.players.map((p) => (
-        <Suspense key={p.id} fallback={null}>
+        <Suspense key={`${p.id}-${seats[p.id]?.skin ?? ''}`} fallback={null}>
           <Piece
             id={p.id}
-            url={models[p.seat % models.length]}
+            url={skinById(seats[p.id]?.skin ?? SEAT_SKINS[p.seat % SEAT_SKINS.length]).model}
             color={visual.playerColors[p.seat % visual.playerColors.length]}
             target={placement.get(p.id) ?? null}
           />
@@ -105,4 +106,4 @@ function Piece({ id, url, color, target }: { id: string; url: string; color: str
   )
 }
 
-for (const url of VISUAL.pieces.models) useGLTF.preload(url)
+for (const id of SEAT_SKINS) useGLTF.preload(skinById(id).model)

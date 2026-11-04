@@ -11,6 +11,7 @@ import { FxLayer } from './Fx'
 import { Lights } from './Lights'
 import { Pieces } from './Pieces'
 import { Scenery } from './Scenery'
+import { TileLabels } from './TileLabels'
 import { TileTags } from './TileTags'
 
 /**
@@ -39,6 +40,9 @@ export function GameScene() {
       <TileTags />
       <Suspense fallback={null}>
         <Scenery />
+      </Suspense>
+      <Suspense fallback={null}>
+        <TileLabels />
       </Suspense>
       <FxLayer />
       <EventPlayer />

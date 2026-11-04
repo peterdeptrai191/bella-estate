@@ -6,7 +6,7 @@ import { rentFor } from './valuation'
 
 const [, , B3] = groupTiles('brown') // ô 4, P = 60
 const [, , P3] = groupTiles('pink') // ô 13, P = 140
-const TAX = 29
+const TAX = 30
 const CHANCE = 3
 
 describe('Mua đất', () => {
@@ -174,9 +174,9 @@ describe('Sân Bay', () => {
   })
 
   it('bay tới ô bất kỳ tốn 100, xử lý ô tới như bình thường', () => {
-    const s = own(ticketHolder(), 'p2', [30], 1)
-    const { state, events } = act(s, { type: 'FLY', tileIndex: 30 })
-    expect(player(state, 'p1').position).toBe(30)
+    const s = own(ticketHolder(), 'p2', [31], 1)
+    const { state, events } = act(s, { type: 'FLY', tileIndex: 31 })
+    expect(player(state, 'p1').position).toBe(31)
     expect(player(state, 'p1').money).toBe(1400)
     expect(player(state, 'p1').airportTicket).toBe(false)
     expect(eventsOf(events, 'PLAYER_MOVED')[0].mode).toBe('FLY')

@@ -5,10 +5,9 @@
 import { useCallback, useMemo } from 'react'
 import { BOARD } from '../../config/board'
 import { ECONOMY } from '../../config/economy'
-import { formatMoney, type GameState } from '../../game-core'
+import { formatMoney, humanPrompt, type GameState, type HumanPrompt } from '../../game-core'
 import { useIsAnimating } from '../../store/animationStore'
 import { useGameStore } from '../../store/gameStore'
-import { humanPrompt, type HumanPrompt } from '../../store/match'
 import { useUiStore } from '../../store/uiStore'
 import { act } from '../act'
 import { TilePickPrompt, RentShieldPopup, SellPanel, HintPanel } from '../popups/BoardPrompts'
@@ -144,11 +143,12 @@ export function PromptLayer() {
   const autoplay = useUiStore((s) => s.autoplayHuman)
   const animating = useIsAnimating()
   const card = useUiStore((s) => s.card)
+  const awaiting = useGameStore((s) => s.awaitingServer)
   const prompt = useMemo(
     () => (game && !animating && !autoplay ? humanPrompt(game, humanId) : null),
     [game, animating, autoplay, humanId],
   )
-  if (!game || !prompt || card) return null
+  if (!game || !prompt || card || awaiting) return null
   // key: mỗi quyết định mới dựng popup mới (chọn cấp nhà… bắt đầu lại từ đầu).
   return <PromptView key={`${actionCount}-${prompt.kind}`} game={game} prompt={prompt} />
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { BOARD, COLOR_GROUPS } from '../../config/board'
 import { buyoutPrice, LANDMARK_LEVEL, rentFor, type GameState, type PlayerId } from '../../game-core'
 import { levelOptions, previewAfter, type LevelOption } from '../../store/match'
+import { useSeatSkin } from '../../store/gameStore'
 import { useVisual } from '../../store/visualStore'
 import { act } from '../act'
 import { LevelIcon, Modal, Money } from '../kit'
@@ -130,7 +131,10 @@ export function CityPopup({ game, tileIndex, mode }: { game: GameState; tileInde
             <Money amount={buyoutPrice(after, tileIndex)} />
           </Line>
         )}
-        {mode === 'BUY' && <p className="text-center text-[0.9rem] text-stone-400">Landmark xây được từ lần dừng sau.</p>}
+        <p className="text-center text-[0.9rem] text-stone-400">
+          Landmark: <b>{BOARD[tileIndex].landmark}</b>
+          {mode === 'BUY' && ' · xây được từ lần dừng sau'}
+        </p>
       </div>
     </Modal>
   )
@@ -163,12 +167,13 @@ export function ResortPopup({ game, tileIndex }: { game: GameState; tileIndex: n
 }
 
 export function BuyoutPopup({ game, tileIndex }: { game: GameState; tileIndex: number }) {
-  const { playerColors, pieces } = useVisual()
+  const { playerColors } = useVisual()
   const me = game.players[game.currentPlayerIndex]
   const tile = game.tiles[tileIndex]
   const ownerSeat = game.players.findIndex((p) => p.id === tile.owner)
   const owner = game.players[ownerSeat]
   const color = playerColors[ownerSeat % playerColors.length]
+  const ownerSkin = useSeatSkin(tile.owner, ownerSeat)
   const price = buyoutPrice(game, tileIndex)
   const isResort = BOARD[tileIndex].kind === 'RESORT'
   const endTurn = { type: 'END_TURN', playerId: me.id } as const
@@ -184,7 +189,7 @@ export function BuyoutPopup({ game, tileIndex }: { game: GameState; tileIndex: n
           </div>
           <div className="flex items-center gap-[0.4rem] text-[1.05rem] text-stone-500">
             Chủ:
-            <img src={pieces.avatars[ownerSeat % pieces.avatars.length]} alt="" className="h-[1.6rem] w-[1.6rem] rounded-full" style={{ background: color }} />
+            <img src={ownerSkin.avatar} alt="" className="h-[1.6rem] w-[1.6rem] rounded-full" style={{ background: color }} />
             <span className="font-bold" style={{ color }}>
               {owner?.name}
             </span>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { formatMoney } from '../../game-core'
 import type { PlayerView } from '../../store/boardView'
 import type { TurnDeadline } from '../../store/uiStore'
+import { useSeatSkin } from '../../store/gameStore'
 import { useVisual } from '../../store/visualStore'
 import { Avatar, CoinIcon } from '../kit'
 import { useCountUp, useRemaining } from '../useCountUp'
@@ -46,21 +47,27 @@ let floatId = 1
 
 export function PlayerPanel({
   player,
+  corner: cornerIndex,
   active,
   isYou,
   isBot,
+  offline = false,
   deadline,
 }: {
   player: PlayerView
+  /** Góc màn hình 0–3 (0 = dưới trái, theo chiều kim đồng hồ). */
+  corner: number
   active: boolean
   isYou: boolean
   isBot: boolean
+  /** Online: người chơi đang mất kết nối (bot tạm chơi thay). */
+  offline?: boolean
   deadline: TurnDeadline | null
 }) {
-  const { playerColors, pieces, animation } = useVisual()
+  const { playerColors, animation } = useVisual()
   const color = playerColors[player.seat % playerColors.length]
-  const avatar = pieces.avatars[player.seat % pieces.avatars.length]
-  const corner = CORNERS[player.seat % CORNERS.length]
+  const avatar = useSeatSkin(player.id, player.seat).avatar
+  const corner = CORNERS[cornerIndex % CORNERS.length]
   const money = useCountUp(player.money, animation.moneyCountDuration)
 
   // Số tiền +/- bay lên khi tiền thay đổi.
@@ -91,6 +98,11 @@ export function PlayerPanel({
           color={color}
           className={`h-full w-full ${active ? 'animate-pulse-ring' : ''}`}
         />
+        {offline && (
+          <span className="absolute -top-[0.3rem] left-1/2 -translate-x-1/2 rounded-full bg-rose-500 px-[0.45rem] text-[0.65rem] leading-[1.1rem] font-extrabold whitespace-nowrap text-white">
+            MẤT KẾT NỐI
+          </span>
+        )}
         {(isBot || isYou) && (
           <span
             className={`absolute -bottom-[0.2rem] left-1/2 -translate-x-1/2 rounded-full px-[0.45rem] text-[0.7rem] leading-[1.15rem] font-extrabold text-white ${

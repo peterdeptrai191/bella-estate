@@ -1,5 +1,5 @@
 import { RoundedBox } from '@react-three/drei'
-import { COLOR_GROUPS, type TileKind } from '../config/board'
+import { COLOR_GROUPS, RESORT_COLOR, type TileKind } from '../config/board'
 import type { VisualConfig } from '../config/visual'
 import { useVisual } from '../store/visualStore'
 import type { TileTransform } from './boardLayout'
@@ -59,7 +59,12 @@ export function Tile({
   const { def, width, depth } = layout
   const w = width - board.tileGap
   const d = depth - board.tileGap
-  const groupColor = def.group ? COLOR_GROUPS.find((g) => g.id === def.group)?.color : undefined
+  // Dải màu phía trong: màu nhóm (thành phố) hoặc màu xanh ngọc (Khu Du Lịch).
+  const groupColor = def.group
+    ? COLOR_GROUPS.find((g) => g.id === def.group)?.color
+    : def.kind === 'RESORT'
+      ? RESORT_COLOR
+      : undefined
   const stripDepth = d * board.stripRatio
   const top = board.tileHeight
   // Tâm vùng đặt công trình: phần ô không có dải màu.

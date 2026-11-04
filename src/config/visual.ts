@@ -58,7 +58,7 @@ export const VISUAL = {
     corner: '#fffaf0',
     chance: '#e8dcff',
     tax: '#ffe3d3',
-    resort: '#d6f3f5',
+    resort: '#d4f1e8',
     sand: '#f6e2b3',
     water: '#7fd3e6',
     start: '#ffe9a8',
@@ -142,20 +142,7 @@ export const VISUAL = {
 
   /** Quân cờ (Kenney Mini Characters / Cube Pets, CC0). */
   pieces: {
-    /** Model cho người chơi 1–4. Muốn dùng thú: 'models/pets/animal-cat.glb', animal-dog, animal-panda, animal-fox. */
-    models: [
-      'models/characters/character-female-b.glb',
-      'models/characters/character-male-c.glb',
-      'models/characters/character-female-a.glb',
-      'models/characters/character-male-e.glb',
-    ],
-    /** Ảnh chân dung trên khung người chơi (chụp từ chính model ở trên). */
-    avatars: [
-      'avatars/character-female-b.png',
-      'avatars/character-male-c.png',
-      'avatars/character-female-a.png',
-      'avatars/character-male-e.png',
-    ],
+    /** Model và ảnh chân dung lấy theo skin của từng người chơi: config/skins.ts. */
     /** Chiều cao quân cờ (model được tự co về chiều cao này). */
     height: 0.62,
     /** Đế tròn màu người chơi dưới chân quân. */
@@ -183,6 +170,18 @@ export const VISUAL = {
     dimOpacity: 0.32,
     /** Ô chọn được nhô lên một chút. */
     lift: 0.06,
+  },
+
+  /** Tên ô in trên mặt bàn cờ (chữ 3D phẳng). */
+  tileText: {
+    enabled: true,
+    /** Font gộp Latin + tiếng Việt (Baloo 2, OFL) trong public/fonts. */
+    font: 'fonts/baloo2-800.woff',
+    fontSize: 0.15,
+    cornerFontSize: 0.2,
+    color: '#5b5466',
+    /** Khoảng cách từ mép ngoài ô vào trong (tỷ lệ chiều sâu ô). */
+    edgeInset: 0.16,
   },
 
   /** Nhãn tiền thuê trên các ô có chủ. */

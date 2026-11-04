@@ -1,8 +1,8 @@
-# Bella Monopoly — hướng dẫn cho Claude
+# Bella Estate — hướng dẫn cho Claude
 
 ## Mục tiêu game
 
-Game cờ tỷ phú 3D chạy trên web (desktop + mobile browser), 2–4 người chơi (người hoặc bot), ván ngắn 15–25 phút. Bàn cờ 32 ô, góc nhìn isometric cố định, low-poly, màu pastel, bóng đổ mềm. Điểm nhấn: **mua lại đất của đối thủ** và **nhiều cách thắng sớm** (độc quyền 3 nhóm màu, một cạnh bàn cờ, hoặc 4 khu du lịch). Kiếm tiền bằng IAP trang trí + rewarded ads, không pay-to-win.
+**Bella Estate** — game cờ tỷ phú 3D chạy trên web, bàn cờ chủ đề "Vòng quanh thế giới" (desktop + mobile browser), 2–4 người chơi (người hoặc bot), ván ngắn 15–25 phút. Bàn cờ 32 ô, góc nhìn isometric cố định, low-poly, màu pastel, bóng đổ mềm. Điểm nhấn: **mua lại đất của đối thủ** và **nhiều cách thắng sớm** (độc quyền 3 nhóm màu, một cạnh bàn cờ, hoặc 4 khu du lịch). Kiếm tiền bằng IAP trang trí + rewarded ads, không pay-to-win.
 
 MVP: luật đầy đủ, bàn cờ 3D, chơi offline với 1–3 bot. Multiplayer online ở v1.0.
 
@@ -28,13 +28,17 @@ src/
   scene/      Mọi thứ 3D (R3F) + event player (scene/events)
   ui/         Giao diện 2D: HUD, popup, màn hình
   audio/      Phát âm thanh (Web Audio)
+  net/        Giao thức client ↔ server (chỉ kiểu dữ liệu + hằng số)
+server/       Server multiplayer Colyseus (gói Node riêng, import src/game-core)
 docs/GDD.md   Game design document
+docs/MULTIPLAYER.md  Kiến trúc online + cách deploy server
 ```
 
 Hướng phụ thuộc chỉ đi một chiều:
 
 ```
 ui, scene  →  store  →  game-core  →  config
+server     →  game-core, config, net
 ```
 
 1. **`game-core` là TypeScript thuần.** Không import React, Three.js, Zustand, `ui/`, `scene/`, `store/`, không dùng DOM/`window`/`localStorage`. Mục đích: sau này chạy y nguyên trên server multiplayer. Được phép import `config/`.
@@ -52,7 +56,8 @@ ui, scene  →  store  →  game-core  →  config
 - `getLegalActions(state)` cho UI bật/tắt nút và cho bot. `getTimeoutAction(state)` dùng khi hết giờ lượt.
 - Các chỗ GDD chưa rõ đã được quyết định ở `docs/RULES-DECISIONS.md`. Đổi luật thì cập nhật file đó.
 - `npm run simulate -- --seed 42` chạy giả lập một ván và in log, dùng để kiểm tra luật bằng mắt.
-- Bot AI: `chooseBotAction(state)` (`game-core/bot.ts`) — mức "Thường" của GDD §7, hàm thuần, không ngẫu nhiên. Thông số ở `config/bots.ts`.
+- Bot AI: `chooseBotAction(state, level)` (`game-core/bot.ts`), 3 mức Dễ/Thường/Khó của GDD §7, hàm thuần (mức Dễ lấy "ngẫu nhiên" từ trạng thái RNG trong state). Thông số ở `config/bots.ts`.
+- Nhịp lượt dùng chung cho client offline và server: `humanPrompt(state, playerId)` (người chơi cần quyết định gì) và `autoAction(state, isHuman, botLevel)` (việc tự làm) ở `game-core/flow.ts`.
 - Hàm tính giá trị (`rentFor`, `buyoutPrice`, `sellValue`…) nhận `Ownership` (chỉ cần `tiles` + `festivalTile`) nên UI gọi được trên view đang hiển thị.
 
 ## Scene 3D
@@ -76,13 +81,23 @@ ui, scene  →  store  →  game-core  →  config
 
 ## Giao diện 2D và điều phối ván
 
-- `store/match.ts` (thuần, có test): `humanPrompt(state, humanId)` cho biết người chơi cần quyết định gì (tung, mua, xây, mua lại, rút thẻ, bán, chọn ô…); `autoAction` là việc tự làm (lượt bot, đi quân, trả thuê khi không có Lá Chắn, kết thúc lượt khi không còn gì làm); `levelOptions` thử chính reducer để biết xây được tới cấp nào và giá bao nhiêu. Không viết luật mới ở đây.
-- `store/matchDriver.ts`: khi hàng đợi animation trống thì gửi action tự động sau một nhịp (`visual.ts › animation.botThinkDelay`), hoặc bật đồng hồ 20 giây (`ECONOMY.turnTimeLimitSec`) và hết giờ thì gửi `getTimeoutAction`.
-- `store/uiStore.ts`: trạng thái thuần giao diện (ô đang xem, chế độ chọn ô trên bàn cờ, chữ lớn, thẻ đang lật, đồng hồ).
+- Màn hình: `uiStore.screen` = `home` | `bots` | `friends` | `lobby` | `shop` | `maps` | `game`. Màn hình menu ở `ui/screens/` (phủ mờ lên bàn cờ 3D), trong trận là `ui/Hud.tsx`. Bắt đầu/chơi lại/thoát: `ui/matchSetup.ts`.
+- `gameStore` có 2 chế độ: `offline` (áp action ngay, bot chạy ở `store/matchDriver.ts`) và `online` (gửi ý định lên server qua `store/net.ts`; state/event chỉ đến từ server). `seats` giữ tên, skin, người/bot, kết nối của từng ghế.
+- `store/match.ts` (thuần, có test): `levelOptions` / `previewAfter` thử chính reducer để biết xây được tới cấp nào và giá bao nhiêu. Không viết luật mới ở đây.
+- `store/matchDriver.ts` (chỉ offline): khi hàng đợi animation trống thì gửi action tự động sau một nhịp (`visual.ts › animation.botThinkDelay`), hoặc bật đồng hồ 20 giây (`ECONOMY.turnTimeLimitSec`) và hết giờ thì gửi `getTimeoutAction`. Online thì server làm việc này.
+- `store/uiStore.ts`: trạng thái thuần giao diện (màn hình, ô đang xem, chế độ chọn ô trên bàn cờ, chữ lớn, thẻ đang lật, đồng hồ).
+- Skin quân cờ: `config/skins.ts` (model + ảnh chân dung + giá Vàng). Hồ sơ người chơi (tên, skin, Vàng, skin đã mua) ở `store/profileStore.ts`, lưu localStorage vì chưa có tài khoản. Thưởng sau trận theo GDD §9 (`META` trong `config/skins.ts`).
 - `ui/Hud.tsx` ghép mọi thứ; popup ở `ui/popups/`, khung người chơi + lớp prompt ở `ui/hud/`. Popup chỉ hiện khi animation đã xong. Nút gửi action qua `ui/act.ts`.
 - Chọn ô trên bàn cờ 3D: popup gọi `useBoardPick({ tiles, onPick })`; `Board`/`Tile` tô sáng ô chọn được, bấm ô thì gọi `onPick`. Không ở chế độ chọn thì bấm ô mở `TileInfo`.
 - Phong cách: chữ Baloo 2, nút nổi khối `btn-3d btn-blue|green|pink|yellow|gray`, khung `Modal` (ruy băng + giấy xếp chồng) trong `ui/kit.tsx`. Cỡ chữ gốc co theo khung hình (`index.css`) nên mọi kích thước dùng `rem`. Giao diện thiết kế cho màn hình ngang; điện thoại cầm dọc thì hiện nhắc xoay ngang.
-- Dev: nút "Bot chơi thay" ở thanh trên; `__bella.ui.setState({ turnTimeScale: 100 })` kéo dài đồng hồ lượt; `__bella.newMatch(seed)` mở ván mới.
+- Dev: nút "Bot chơi thay" ở thanh trên; `__bella.ui.setState({ turnTimeScale: 100 })` kéo dài đồng hồ lượt; `__bella.newMatch(seed)` mở ván với 3 bot; `__bella.menu()` về trang chủ.
+
+## Server multiplayer (`server/`)
+
+- Gói riêng: `npm run server:install` rồi `npm run server` (cổng 2567). Test: `npm run test:server`. Typecheck: `cd server && npx tsc --noEmit -p .`
+- Server-authoritative: client gửi ý định, server gán `playerId` theo ghế, kiểm tra bằng `applyAction`, phát state (đã bỏ trạng thái RNG) + event. Xúc xắc tung trên server (RNG crypto thay vào trước mỗi action).
+- `MatchSession.ts` là logic ván (không phụ thuộc Colyseus, test bằng đồng hồ giả); `BellaRoom.ts` chỉ nối Colyseus. Giao thức và hằng số ở `src/net/protocol.ts`.
+- Các lựa chọn khi yêu cầu chưa rõ (bắt đầu sớm, lấp bot, giữ chỗ…) ghi ở `docs/RULES-DECISIONS.md` mục "Chơi online".
 
 ## Quy ước code
 
@@ -92,5 +107,5 @@ ui, scene  →  store  →  game-core  →  config
 - Định danh trong code bằng tiếng Anh; comment và nội dung hiển thị cho người chơi có thể bằng tiếng Việt.
 - Mọi luật mới trong game-core phải có test Vitest đi kèm.
 - UI 2D dùng Tailwind class, đặt đè lên canvas; lớp phủ không cần click thì để `pointer-events-none`.
-- Trước khi coi là xong: `npm run typecheck`, `npm test` và `npm run lint` đều phải qua.
+- Trước khi coi là xong: `npm run typecheck`, `npm test` và `npm run lint` đều phải qua; sửa server thì cả `npm run test:server` và typecheck của server.
 - Làm theo từng phase được giao; không tự làm trước tính năng của phase sau.
