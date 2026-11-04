@@ -32,6 +32,8 @@ export {
   completedGroups,
   housesOwned,
   investedValue,
+  landPrice,
+  type Ownership,
   liquidationValue,
   netWorth,
   ownedTiles,
@@ -40,3 +42,4 @@ export {
   standings,
 } from './valuation'
 export { isEarthquakeTarget } from './cards'
+export { chooseBotAction } from './bot'

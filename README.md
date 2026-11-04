@@ -16,4 +16,6 @@ npm run build
 
 ## Asset
 
-Model 3D và âm thanh của [Kenney](https://kenney.nl) (CC0): Mini Characters, Cube Pets, City Kit Suburban, Interface Sounds. Giấy phép đi kèm trong `public/models/*/LICENSE.txt` và `public/sounds/LICENSE.txt`.
+Model 3D và âm thanh của [Kenney](https://kenney.nl) (CC0): Mini Characters, Cube Pets, City Kit Suburban, Interface Sounds. Giấy phép đi kèm trong `public/models/*/LICENSE.txt` và `public/sounds/LICENSE.txt`. Ảnh chân dung trong `public/avatars/` được chụp từ chính các model Mini Characters.
+
+Chữ: [Baloo 2](https://fonts.google.com/specimen/Baloo+2) (SIL Open Font License), qua gói `@fontsource/baloo-2`.

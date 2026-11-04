@@ -4,11 +4,15 @@ import './index.css'
 import App from './App.tsx'
 import { useAnimationStore } from './store/animationStore'
 import { useGameStore } from './store/gameStore'
+import { useUiStore } from './store/uiStore'
 import { useVisualStore } from './store/visualStore'
+import { startNewMatch } from './ui/matchSetup'
 
 // Chế độ dev: mở store ra console để gỡ lỗi / đẩy event mẫu vào hàng đợi animation.
 if (import.meta.env.DEV) {
-  Object.assign(window, { __bella: { game: useGameStore, animation: useAnimationStore, visual: useVisualStore } })
+  Object.assign(window, {
+    __bella: { game: useGameStore, animation: useAnimationStore, visual: useVisualStore, ui: useUiStore, newMatch: startNewMatch },
+  })
 }
 
 createRoot(document.getElementById('root')!).render(

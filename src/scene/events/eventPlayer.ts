@@ -9,7 +9,10 @@ import { Vector3 } from 'three'
 import { playSound } from '../../audio/soundPlayer'
 import type { GameEvent, PlayerId } from '../../game-core'
 import { BOARD_SIZE } from '../../config/board'
+import { BOARD } from '../../config/board'
 import { useAnimationStore } from '../../store/animationStore'
+import { useGameStore } from '../../store/gameStore'
+import { useUiStore, type Banner } from '../../store/uiStore'
 import { useVisualStore } from '../../store/visualStore'
 import { centerTopY, computeTileLayout, piecePlacement } from '../boardLayout'
 import { followPiece } from '../cameraControl'
@@ -21,6 +24,12 @@ const wait = (seconds: number) => new Promise<void>((resolve) => setTimeout(reso
 
 const visual = () => useVisualStore.getState().visual
 const apply = (event: GameEvent) => useAnimationStore.getState().applyToView(event)
+
+/** Người chơi trên máy này (không tính chế độ để bot chơi thay). */
+const isLocal = (id: PlayerId) => useGameStore.getState().humanId === id && !useUiStore.getState().autoplayHuman
+const nameOf = (id: PlayerId) => useAnimationStore.getState().view?.players.find((p) => p.id === id)?.name ?? id
+const banner = (text: string, tone: Banner['tone']) =>
+  useUiStore.getState().showBanner(text, tone, visual().animation.bannerDuration)
 
 /** Chỗ đứng của quân `id` theo view hiện tại. */
 function restingSpot(id: PlayerId): [number, number] | null {
@@ -81,11 +90,18 @@ export async function playEvent(event: GameEvent): Promise<void> {
     case 'TURN_STARTED':
       apply(event)
       playSound('turnStart')
+      if (isLocal(event.playerId)) banner('Lượt của bạn!', 'info')
       await wait(a.turnPause)
       return
     case 'DICE_ROLLED':
       await rollDice(event.dice)
       apply(event)
+      if (event.isDouble) banner('ĐÔI!', 'double')
+      return
+    case 'EXTRA_ROLL':
+      apply(event)
+      banner('Tung thêm lượt!', 'good')
+      await wait(a.turnPause)
       return
     case 'PLAYER_MOVED':
       await movePiece(event)
@@ -108,6 +124,7 @@ export async function playEvent(event: GameEvent): Promise<void> {
       await coins(event.from, event.to, event)
       return
     case 'BOUGHT_OUT':
+      banner('MUA LẠI!', 'good')
       await coins(event.playerId, event.from, event)
       playSound('buy')
       await wait(a.buildDuration)
@@ -119,15 +136,35 @@ export async function playEvent(event: GameEvent): Promise<void> {
       playSound('passStart')
       await coins(null, event.playerId, event)
       return
-    case 'CARD_DRAWN':
+    case 'CARD_DRAWN': {
       playSound('card')
-      await wait(a.cardPause)
+      const interactive = isLocal(event.playerId)
+      await useUiStore
+        .getState()
+        .showCard({ card: event.card, playerId: event.playerId, interactive }, interactive ? a.cardRevealHuman : a.cardRevealBot)
+      apply(event)
+      return
+    }
+    case 'RENT_WAIVED':
+      playSound('card')
+      banner('Lá Chắn: miễn tiền thuê!', 'good')
+      apply(event)
+      await wait(a.cardPause / 2)
       return
     case 'SENT_TO_ISLAND':
       playSound('island')
+      banner(isLocal(event.playerId) ? 'Bạn ra Đảo Hoang!' : `${nameOf(event.playerId)} ra Đảo Hoang`, 'bad')
+      apply(event)
+      return
+    case 'DEBT_STARTED':
+      playSound('island')
+      if (isLocal(event.playerId)) banner('Không đủ tiền! Hãy bán tài sản', 'bad')
+      apply(event)
+      await wait(a.cardPause)
       return
     case 'FESTIVAL_HOSTED':
       playSound('festival')
+      banner(`Lễ Hội ở ${BOARD[event.tileIndex].name}!`, 'good')
       apply(event)
       await wait(a.cardPause / 2)
       return
@@ -143,6 +180,7 @@ export async function playEvent(event: GameEvent): Promise<void> {
       return
     case 'BANKRUPT':
       playSound('bankrupt')
+      banner(`${nameOf(event.playerId)} PHÁ SẢN`, 'bad')
       await vanish(event.playerId)
       apply(event)
       return

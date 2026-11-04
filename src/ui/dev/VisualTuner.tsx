@@ -94,7 +94,7 @@ export function VisualTuner() {
 
   // Đặt bên phải, dưới khung người chơi góc trên để không che HUD.
   return (
-    <div className="fixed right-3 top-20 z-50 max-h-[calc(100%-11rem)] w-[360px] max-w-[calc(100%-1.5rem)] overflow-auto">
+    <div className="fixed right-3 top-28 z-50 max-h-[calc(100%-11rem)] w-[360px] max-w-[calc(100%-1.5rem)] overflow-auto">
       <Leva
         fill
         collapsed

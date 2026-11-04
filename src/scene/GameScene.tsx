@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
+import { useUiStore } from '../store/uiStore'
 import { useVisual } from '../store/visualStore'
 import { Board } from './Board'
 import { CameraRig } from './CameraRig'
@@ -10,6 +11,7 @@ import { FxLayer } from './Fx'
 import { Lights } from './Lights'
 import { Pieces } from './Pieces'
 import { Scenery } from './Scenery'
+import { TileTags } from './TileTags'
 
 /**
  * Scene 3D: bàn cờ isometric, quân cờ, xúc xắc và event player phát animation.
@@ -25,6 +27,7 @@ export function GameScene() {
       flat
       dpr={[1, 2]}
       gl={{ alpha: true }}
+      onPointerMissed={() => useUiStore.getState().selectTile(null)}
       className="absolute inset-0"
       style={{ background: `linear-gradient(180deg, ${background.top} 0%, ${background.bottom} 100%)` }}
     >
@@ -33,6 +36,7 @@ export function GameScene() {
       <Board />
       <Dice />
       <Pieces />
+      <TileTags />
       <Suspense fallback={null}>
         <Scenery />
       </Suspense>

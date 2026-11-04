@@ -1,7 +1,9 @@
 import { RoundedBox } from '@react-three/drei'
 import { useMemo } from 'react'
 import { useAnimationStore } from '../store/animationStore'
+import { useUiStore } from '../store/uiStore'
 import { useVisual } from '../store/visualStore'
+import type { PickState } from './PickGlow'
 import { boardLength, computeTileLayout } from './boardLayout'
 import { Mat } from './Mat'
 import { Tile, type TileBuilding } from './Tile'
@@ -30,6 +32,15 @@ export function Board() {
     for (const b of preview.buildings) {
       buildings.set(b.tile, { level: b.level, color: playerColors[(b.player - 1) % playerColors.length] })
     }
+  }
+
+  // Chế độ chọn ô (Lễ Hội, Sân Bay, bán tài sản…) và bấm ô để xem thông tin.
+  const pick = useUiStore((s) => s.pick)
+  const clickTile = useUiStore((s) => s.clickTile)
+  const pickState = (i: number): PickState => {
+    if (!pick) return 'none'
+    if (pick.selected === i) return 'selected'
+    return pick.tiles.includes(i) ? 'available' : 'dim'
   }
 
   return (
@@ -69,7 +80,14 @@ export function Board() {
       )}
 
       {layout.map((t) => (
-        <Tile key={t.def.index} layout={t} building={buildings.get(t.def.index)} />
+        <Tile
+          key={t.def.index}
+          layout={t}
+          building={buildings.get(t.def.index)}
+          pick={pickState(t.def.index)}
+          pickTone={pick?.tone}
+          onSelect={view ? clickTile : undefined}
+        />
       ))}
 
       {/* Sàn trong suốt chỉ hứng bóng của bàn cờ */}

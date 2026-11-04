@@ -1,4 +1,14 @@
 @import 'tailwindcss';
+@import '@fontsource/baloo-2/600.css';
+@import '@fontsource/baloo-2/700.css';
+@import '@fontsource/baloo-2/800.css';
+
+@theme {
+  --font-game: 'Baloo 2', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-cream: #fbf6ec;
+  --color-cream-dark: #ece2cf;
+  --color-ink: #3b3a4a;
+}
 
 html,
 body,
@@ -7,10 +17,165 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/*
+ * Cỡ chữ gốc co theo khung hình: mọi kích thước Tailwind (rem) co theo,
+ * nên HUD vừa cả điện thoại xoay ngang (cao ~360px) lẫn màn hình desktop.
+ */
+html {
+  font-size: clamp(10px, min(2.4vh, 1.3vw), 16px);
 }
 
 body {
   background: #f6efe4;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-game);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Nút nổi khối 3D: mặt nút + cạnh dưới đậm màu + bóng mềm. Màu qua --btn-face / --btn-edge. */
+@utility btn-3d {
+  --btn-face: #2fa7e6;
+  --btn-edge: #1b6fa5;
+  position: relative;
+  border-radius: 9999px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0.08em 0 rgb(0 0 0 / 0.25);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--btn-face) 80%, white) 0%, var(--btn-face) 45%);
+  box-shadow:
+    inset 0 0.12em 0 rgb(255 255 255 / 0.45),
+    0 0.32em 0 var(--btn-edge),
+    0 0.55em 0.9em rgb(40 30 60 / 0.3);
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease,
+    filter 120ms ease;
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0.24em);
+    box-shadow:
+      inset 0 0.12em 0 rgb(255 255 255 / 0.45),
+      0 0.08em 0 var(--btn-edge),
+      0 0.2em 0.4em rgb(40 30 60 / 0.3);
+  }
+  &:disabled {
+    filter: grayscale(0.7) brightness(0.95);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-blue {
+  --btn-face: #2fa7e6;
+  --btn-edge: #1b6fa5;
+}
+@utility btn-green {
+  --btn-face: #57c04a;
+  --btn-edge: #357f2a;
+}
+@utility btn-pink {
+  --btn-face: #f2437a;
+  --btn-edge: #ab1f4f;
+}
+@utility btn-yellow {
+  --btn-face: #ffbe2e;
+  --btn-edge: #c4840a;
+}
+@utility btn-gray {
+  --btn-face: #b9b2a8;
+  --btn-edge: #827a70;
+}
+
+/* Thẻ lật 3D */
+@utility perspective-card {
+  perspective: 60em;
+}
+@utility preserve-3d {
+  transform-style: preserve-3d;
+}
+@utility backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes banner-in {
+  0% {
+    transform: scale(0.3) rotate(-8deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.15) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-4deg);
+  }
+}
+@keyframes float-up {
+  0% {
+    transform: translateY(0.6em);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-1.6em);
+    opacity: 0;
+  }
+}
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0.15em var(--glow), 0 0 0.8em 0.1em var(--glow);
+  }
+  50% {
+    box-shadow: 0 0 0 0.3em var(--glow), 0 0 1.6em 0.4em var(--glow);
+  }
+}
+@keyframes bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.35em);
+  }
+}
+
+@utility animate-pop-in {
+  animation: pop-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@utility animate-banner-in {
+  animation: banner-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+@utility animate-float-up {
+  animation: float-up 1.1s ease-out both;
+}
+@utility animate-pulse-ring {
+  animation: pulse-ring 1.4s ease-in-out infinite;
+}
+@utility animate-bounce-soft {
+  animation: bounce-soft 1.2s ease-in-out infinite;
 }

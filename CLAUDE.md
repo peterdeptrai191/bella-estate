@@ -52,6 +52,8 @@ ui, scene  →  store  →  game-core  →  config
 - `getLegalActions(state)` cho UI bật/tắt nút và cho bot. `getTimeoutAction(state)` dùng khi hết giờ lượt.
 - Các chỗ GDD chưa rõ đã được quyết định ở `docs/RULES-DECISIONS.md`. Đổi luật thì cập nhật file đó.
 - `npm run simulate -- --seed 42` chạy giả lập một ván và in log, dùng để kiểm tra luật bằng mắt.
+- Bot AI: `chooseBotAction(state)` (`game-core/bot.ts`) — mức "Thường" của GDD §7, hàm thuần, không ngẫu nhiên. Thông số ở `config/bots.ts`.
+- Hàm tính giá trị (`rentFor`, `buyoutPrice`, `sellValue`…) nhận `Ownership` (chỉ cần `tiles` + `festivalTile`) nên UI gọi được trên view đang hiển thị.
 
 ## Scene 3D
 
@@ -71,6 +73,16 @@ ui, scene  →  store  →  game-core  →  config
 - Xúc xắc: kết quả lấy từ event, animation chỉ diễn lại (không physics). Điều khiển bằng lệnh nằm ở `*Control.ts` (diceControl, pieceControl, fxControl, cameraControl).
 - Thời lượng/biên độ mọi animation ở `visual.ts › animation`.
 - Chế độ dev: `window.__bella` mở các store ra console (đẩy event mẫu: `__bella.animation.getState().enqueue([...])`).
+
+## Giao diện 2D và điều phối ván
+
+- `store/match.ts` (thuần, có test): `humanPrompt(state, humanId)` cho biết người chơi cần quyết định gì (tung, mua, xây, mua lại, rút thẻ, bán, chọn ô…); `autoAction` là việc tự làm (lượt bot, đi quân, trả thuê khi không có Lá Chắn, kết thúc lượt khi không còn gì làm); `levelOptions` thử chính reducer để biết xây được tới cấp nào và giá bao nhiêu. Không viết luật mới ở đây.
+- `store/matchDriver.ts`: khi hàng đợi animation trống thì gửi action tự động sau một nhịp (`visual.ts › animation.botThinkDelay`), hoặc bật đồng hồ 20 giây (`ECONOMY.turnTimeLimitSec`) và hết giờ thì gửi `getTimeoutAction`.
+- `store/uiStore.ts`: trạng thái thuần giao diện (ô đang xem, chế độ chọn ô trên bàn cờ, chữ lớn, thẻ đang lật, đồng hồ).
+- `ui/Hud.tsx` ghép mọi thứ; popup ở `ui/popups/`, khung người chơi + lớp prompt ở `ui/hud/`. Popup chỉ hiện khi animation đã xong. Nút gửi action qua `ui/act.ts`.
+- Chọn ô trên bàn cờ 3D: popup gọi `useBoardPick({ tiles, onPick })`; `Board`/`Tile` tô sáng ô chọn được, bấm ô thì gọi `onPick`. Không ở chế độ chọn thì bấm ô mở `TileInfo`.
+- Phong cách: chữ Baloo 2, nút nổi khối `btn-3d btn-blue|green|pink|yellow|gray`, khung `Modal` (ruy băng + giấy xếp chồng) trong `ui/kit.tsx`. Cỡ chữ gốc co theo khung hình (`index.css`) nên mọi kích thước dùng `rem`. Giao diện thiết kế cho màn hình ngang; điện thoại cầm dọc thì hiện nhắc xoay ngang.
+- Dev: nút "Bot chơi thay" ở thanh trên; `__bella.ui.setState({ turnTimeScale: 100 })` kéo dài đồng hồ lượt; `__bella.newMatch(seed)` mở ván mới.
 
 ## Quy ước code
 

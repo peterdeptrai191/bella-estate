@@ -5,6 +5,7 @@ import { useVisual } from '../store/visualStore'
 import type { TileTransform } from './boardLayout'
 import { BuildingSet } from './Buildings'
 import { Mat } from './Mat'
+import { PickGlow, type PickState } from './PickGlow'
 import { Pop } from './Pop'
 import { useMountedFlag } from './useMountedFlag'
 import { TileProps } from './TileProps'
@@ -40,8 +41,20 @@ export interface TileBuilding {
  * Một ô bàn cờ. Trục cục bộ: x dọc theo cạnh, z hướng ra ngoài bàn cờ.
  * Dải màu nhóm nằm phía trong (gần bãi cỏ), công trình/trang trí ở phần còn lại.
  */
-export function Tile({ layout, building }: { layout: TileTransform; building?: TileBuilding }) {
-  const { board, colors, props } = useVisual()
+export function Tile({
+  layout,
+  building,
+  pick = 'none',
+  pickTone = 'good',
+  onSelect,
+}: {
+  layout: TileTransform
+  building?: TileBuilding
+  pick?: PickState
+  pickTone?: 'good' | 'bad'
+  onSelect?: (tileIndex: number) => void
+}) {
+  const { board, colors, props, pick: pickCfg } = useVisual()
   const mounted = useMountedFlag()
   const { def, width, depth } = layout
   const w = width - board.tileGap
@@ -53,7 +66,22 @@ export function Tile({ layout, building }: { layout: TileTransform; building?: T
   const contentZ = groupColor ? stripDepth / 2 : 0
 
   return (
-    <group position={[layout.x, 0, layout.z]} rotation-y={layout.rotationY}>
+    <group
+      position={[layout.x, pick === 'available' || pick === 'selected' ? pickCfg.lift : 0, layout.z]}
+      rotation-y={layout.rotationY}
+      onClick={(e) => {
+        if (!onSelect) return
+        e.stopPropagation()
+        onSelect(def.index)
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        if (onSelect && pick !== 'dim') document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = ''
+      }}
+    >
       <RoundedBox
         args={[w, board.tileHeight, d]}
         radius={board.tileRadius}
@@ -105,6 +133,8 @@ export function Tile({ layout, building }: { layout: TileTransform; building?: T
           </Pop>
         </group>
       )}
+
+      <PickGlow state={pick} tone={pickTone} w={w} d={d} y={top + board.stripHeight} />
 
       <group position={[0, top + board.stripHeight, contentZ]}>
         <group scale={props.scale}>

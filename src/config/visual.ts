@@ -149,6 +149,13 @@ export const VISUAL = {
       '/models/characters/character-female-a.glb',
       '/models/characters/character-male-e.glb',
     ],
+    /** Ảnh chân dung trên khung người chơi (chụp từ chính model ở trên). */
+    avatars: [
+      '/avatars/character-female-b.png',
+      '/avatars/character-male-c.png',
+      '/avatars/character-female-a.png',
+      '/avatars/character-male-e.png',
+    ],
     /** Chiều cao quân cờ (model được tự co về chiều cao này). */
     height: 0.62,
     /** Đế tròn màu người chơi dưới chân quân. */
@@ -160,6 +167,29 @@ export const VISUAL = {
     anchorInset: 0.14,
     /** Như trên nhưng cho 4 ô góc, để không đứng lẫn vào đồ trang trí. */
     cornerInset: 0.27,
+  },
+
+  /** Chọn ô trên bàn cờ (Lễ Hội, Sân Bay, Động Đất, bán tài sản…). */
+  pick: {
+    /** Màu tô ô chọn được: lựa chọn có lợi / có hại, và ô đang được chọn. */
+    good: '#ffd84d',
+    bad: '#ff5c8a',
+    selected: '#ff2d6f',
+    /** Độ đậm nhấp nháy (thấp nhất → cao nhất) và tốc độ. */
+    opacityMin: 0.3,
+    opacityMax: 0.8,
+    pulseSpeed: 4,
+    /** Ô không chọn được thì tối đi. */
+    dimOpacity: 0.32,
+    /** Ô chọn được nhô lên một chút. */
+    lift: 0.06,
+  },
+
+  /** Nhãn tiền thuê trên các ô có chủ. */
+  tags: {
+    enabled: true,
+    /** Độ cao nhãn so với mặt ô. */
+    height: 0.08,
   },
 
   /** Xúc xắc ở giữa bàn cờ. */
@@ -233,6 +263,18 @@ export const VISUAL = {
     /** Dừng lại khi rút thẻ / đầu lượt. */
     cardPause: 0.6,
     turnPause: 0.25,
+    /** Bot "suy nghĩ" trước mỗi quyết định. */
+    botThinkDelay: 0.55,
+    /** Bước tự làm cho người chơi (đi quân, trả thuê, kết thúc lượt). */
+    autoActionDelay: 0.3,
+    /** Thẻ Cơ Hội: thời gian lật, thời gian tự đóng khi bot rút / khi người chơi không bấm. */
+    cardFlipDuration: 0.7,
+    cardRevealBot: 2,
+    cardRevealHuman: 8,
+    /** Chữ lớn giữa màn hình (ĐÔI!, Ra Đảo…). */
+    bannerDuration: 1.3,
+    /** Số tiền trên khung người chơi chạy tới giá trị mới. */
+    moneyCountDuration: 0.6,
   },
 
   /** Nhà mẫu tạm hiển thị khi CHƯA có ván chơi (level: 1–3 nhà, 4 = Landmark; player: 1–4). */
