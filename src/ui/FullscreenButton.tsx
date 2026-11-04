@@ -44,6 +44,7 @@ export function FullscreenButton({ size = 'h-[2.2rem] w-[2.2rem] text-[1.1rem]' 
               2. Chọn <b>Thêm vào MH chính</b> (Add to Home Screen).
             </p>
             <p>3. Mở Bella Estate từ biểu tượng mới trên màn hình chính.</p>
+            <p className="text-[0.95rem] text-stone-500">Chơi luôn trên Safari: vuốt nhẹ lên trên bàn cờ để Safari thu gọn thanh địa chỉ và thanh tab.</p>
           </div>
           <div className="mt-[0.9rem] flex justify-center">
             <button className="btn-3d btn-blue px-[2rem] py-[0.4rem] text-[1.1rem]" onClick={() => setTip(false)}>
