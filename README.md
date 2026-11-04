@@ -24,6 +24,6 @@ Chơi online khi đã deploy: xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 Logo Bella Estate và Bella Game Studio (`public/brand/`) là của Bella Game Studio, nhà phát hành game.
 
 
-Model 3D và âm thanh của [Kenney](https://kenney.nl) (CC0): Mini Characters, Cube Pets, City Kit Suburban, Interface Sounds, Casino Audio, Impact Sounds. Giấy phép đi kèm trong `public/models/*/LICENSE.txt` và `public/sounds/LICENSE.txt`. Ảnh chân dung trong `public/avatars/` được chụp từ chính các model Mini Characters.
+Model 3D và âm thanh của [Kenney](https://kenney.nl) (CC0): Mini Characters, Cube Pets, City Kit Suburban, Interface Sounds, Casino Audio, Impact Sounds. Giấy phép đi kèm trong `public/models/*/LICENSE.txt` và `public/sounds/LICENSE.txt`. Ảnh chân dung trong `public/avatars/` được chụp từ chính các model Mini Characters (dev: `scripts/avatar-render.html`). Skin "Tiền đạo Đỏ" là male-a tô lại bảng màu bằng `node scripts/make-skin-striker.mjs`.
 
 Chữ: [Baloo 2](https://fonts.google.com/specimen/Baloo+2) (SIL Open Font License), qua gói `@fontsource/baloo-2`.

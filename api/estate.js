@@ -1427,6 +1427,8 @@ var SKINS = [
   character("female-f", "Phi c\xF4ng Th\u1EA3o", 250),
   character("male-d", "Th\u1EE3 x\xE2y Ph\xFAc", 300),
   character("male-f", "V\u1EADn \u0111\u1ED9ng vi\xEAn Khoa", 300),
+  // Skin tự làm: male-a tô lại bằng scripts/make-skin-striker.mjs.
+  character("striker", "Ti\u1EC1n \u0111\u1EA1o \u0110\u1ECF", 350),
   pet("cat", "M\xE8o Mun", 500),
   pet("dog", "C\xFAn V\xE0ng", 500),
   pet("fox", "C\xE1o L\u1EEDa", 700),

@@ -28,6 +28,8 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
     "@tailwindcss/vite": "^4.3.4",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
@@ -36,6 +38,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "esbuild": "^0.28.2",
     "oxlint": "^1.89.0",
+    "pngjs": "^7.0.0",
     "tailwindcss": "^4.3.4",
     "tsx": "^4.23.15",
     "typescript": "~7.0.2",

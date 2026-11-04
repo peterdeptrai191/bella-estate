@@ -45,6 +45,8 @@ export const SKINS: readonly SkinDef[] = [
   character('female-f', 'Phi công Thảo', 250),
   character('male-d', 'Thợ xây Phúc', 300),
   character('male-f', 'Vận động viên Khoa', 300),
+  // Skin tự làm: male-a tô lại bằng scripts/make-skin-striker.mjs.
+  character('striker', 'Tiền đạo Đỏ', 350),
   pet('cat', 'Mèo Mun', 500),
   pet('dog', 'Cún Vàng', 500),
   pet('fox', 'Cáo Lửa', 700),
