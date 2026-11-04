@@ -9,10 +9,11 @@ import { useCountUp, useRemaining } from '../useCountUp'
 
 /** Vị trí 4 góc theo thứ tự ghế, chiều kim đồng hồ từ góc dưới trái (ghế 0 = người chơi trên máy). */
 const CORNERS = [
-  { box: 'left-[1rem] bottom-[1rem]', right: false },
-  { box: 'left-[1rem] top-[1rem]', right: false },
-  { box: 'right-[1rem] top-[1rem]', right: true },
-  { box: 'right-[1rem] bottom-[1rem]', right: true },
+  // Cầm dọc: hàng trên nằm dưới thanh Vòng/Thoát và dòng mô tả sự kiện, hàng dưới nằm trên nút Tung xúc xắc.
+  { box: 'left-[1rem] bottom-[1rem] portrait:bottom-[6.2rem]', right: false },
+  { box: 'left-[1rem] top-[1rem] portrait:top-[6.8rem]', right: false },
+  { box: 'right-[1rem] top-[1rem] portrait:top-[6.8rem]', right: true },
+  { box: 'right-[1rem] bottom-[1rem] portrait:bottom-[6.2rem]', right: true },
 ]
 
 function TimerRing({ deadline, color }: { deadline: TurnDeadline; color: string }) {

@@ -9,7 +9,7 @@ import { useGameStore } from '../store/gameStore'
 import { startMatchDriver } from '../store/matchDriver'
 import { useUiStore } from '../store/uiStore'
 import { PlayerPanel } from './hud/PlayerPanel'
-import { Banners, ResultModal, RotateHint, TopBar } from './hud/Overlays'
+import { Banners, ResultModal, TopBar } from './hud/Overlays'
 import { PromptLayer } from './hud/PromptLayer'
 import { exitToMenu, playAgain } from './matchSetup'
 import { CardReveal } from './popups/CardPopup'
@@ -37,7 +37,7 @@ export function Hud() {
 
   useEffect(() => startMatchDriver(), [])
 
-  if (!view || !game) return <RotateHint />
+  if (!view || !game) return null
   const isBotSeat = (id: string) => seats[id]?.kind === 'bot'
   // Người chơi trên máy này luôn ở góc dưới trái; các ghế khác xếp theo chiều kim đồng hồ.
   const localSeat = Math.max(0, view.players.findIndex((p) => p.id === humanId))
@@ -62,7 +62,6 @@ export function Hud() {
       <CardReveal />
       <TileInfo />
       <ResultModal onRestart={playAgain} onMenu={() => void exitToMenu()} />
-      <RotateHint />
     </div>
   )
 }

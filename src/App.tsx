@@ -3,7 +3,6 @@ import { GameScene } from './scene/GameScene'
 import { reconnect } from './store/net'
 import { useUiStore } from './store/uiStore'
 import { Hud } from './ui/Hud'
-import { RotateHint } from './ui/hud/Overlays'
 import { HomeScreen, StudioSplash } from './ui/screens/HomeScreen'
 import { LandingBg } from './ui/screens/LandingBg'
 import { FriendsScreen, LobbyScreen } from './ui/screens/OnlineScreens'
@@ -25,7 +24,6 @@ function Menus() {
       {screen === 'lobby' && <LobbyScreen />}
       {screen === 'shop' && <ShopScreen />}
       {screen === 'maps' && <MapsScreen />}
-      <RotateHint />
     </div>
   )
 }

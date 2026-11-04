@@ -19,12 +19,18 @@ export const VISUAL = {
     azimuthDeg: 45,
     /** Khoảng trống quanh bàn cờ khi tự co cho vừa khung (1 = sát mép). */
     fitPadding: 1.12,
-    /** Lề khi màn hình thấp (điện thoại xoay ngang): bàn cờ to hơn, HUD nằm ở 4 góc nên không che. */
+    /** Lề khi màn hình nhỏ (điện thoại): bàn cờ to hơn, HUD nằm ở 4 góc nên không che. */
     fitPaddingCompact: 1.0,
-    /** Chiều cao khung (px) dưới mức này thì coi là màn hình thấp. */
+    /** Cạnh ngắn của khung (px) dưới mức này thì coi là màn hình nhỏ (điện thoại ngang hoặc dọc). */
     compactHeight: 520,
     /** Phần chiều cao nhà/Landmark được chừa khi co khung (1 = chừa đủ, 0 = bỏ qua). */
     fitHeadroom: 0.5,
+    /** Người chơi được phóng to tối đa bao nhiêu lần (chụm 2 ngón / lăn chuột). */
+    userZoomMax: 3,
+    /** Tốc độ zoom khi lăn chuột. */
+    wheelZoomSpeed: 0.0015,
+    /** Kéo quá số px này thì không tính là bấm vào ô. */
+    dragThreshold: 8,
   },
 
   board: {

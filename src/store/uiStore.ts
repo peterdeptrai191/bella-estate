@@ -47,6 +47,8 @@ interface UiStore {
   autoplayHuman: boolean
   /** Hệ số nhân thời gian lượt (dev: kéo dài khi gỡ lỗi / chụp màn hình). */
   turnTimeScale: number
+  /** Người chơi đang zoom/kéo bàn cờ khỏi toàn cảnh (hiện nút "Toàn cảnh"). */
+  viewZoomed: boolean
   selectTile: (tileIndex: number | null) => void
   setPick: (pick: BoardPick | null) => void
   /** Bấm một ô trên bàn cờ: đang ở chế độ chọn thì chọn, không thì xem thông tin ô. */
@@ -71,6 +73,7 @@ export const useUiStore = create<UiStore>((set, get) => ({
   deadline: null,
   autoplayHuman: false,
   turnTimeScale: 1,
+  viewZoomed: false,
   selectTile: (selectedTile) => set({ selectedTile }),
   setPick: (pick) => set({ pick }),
   clickTile: (tileIndex) => {

@@ -103,7 +103,7 @@ export function fitFrame(visual: VisualConfig, viewportWidth: number, viewportHe
       }
     }
   }
-  const pad = viewportHeight < camera.compactHeight ? camera.fitPaddingCompact : camera.fitPadding
+  const pad = Math.min(viewportWidth, viewportHeight) < camera.compactHeight ? camera.fitPaddingCompact : camera.fitPadding
   const zoom = Math.min(viewportWidth / (2 * maxX * pad), viewportHeight / ((maxY - minY) * pad))
   return { zoom, offsetUp: (maxY + minY) / 2 }
 }

@@ -42,7 +42,7 @@ function ArrowButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`group inline-flex items-stretch overflow-hidden rounded-xl font-extrabold transition hover:-translate-y-[0.1rem] active:translate-y-[0.2rem] active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${colors} ${pad}`}
+      className={`group inline-flex items-stretch overflow-hidden rounded-xl font-extrabold whitespace-nowrap transition hover:-translate-y-[0.1rem] active:translate-y-[0.2rem] active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${colors} ${pad}`}
     >
       <span>{children}</span>
       <span className={`flex items-center px-[0.8rem] transition group-hover:px-[1rem] ${arrow}`}>›</span>
@@ -138,8 +138,8 @@ export function HomeScreen() {
       </header>
 
       {/* Hero */}
-      <section id="top" className="relative mx-auto grid max-w-[78rem] grid-cols-[1.05fr_1fr] items-center gap-[2rem] px-[2.5rem] pt-[1.5rem] pb-[2.5rem]">
-        <div className="relative z-10">
+      <section id="top" className="relative mx-auto grid max-w-[78rem] grid-cols-[1.05fr_1fr] items-center gap-[2rem] px-[2.5rem] pt-[1.5rem] pb-[2.5rem] portrait:grid-cols-1 portrait:gap-[0.5rem] portrait:px-[1.5rem] portrait:text-center">
+        <div className="relative z-10 portrait:order-2">
           {/* Banner chào mừng */}
           <div className="relative mb-[1.1rem] inline-flex">
             <span className="absolute top-[0.4rem] -left-[0.9rem] h-full w-[1.4rem] bg-[#d99a1a]" style={{ clipPath: 'polygon(0 0,100% 0,100% 100%,0 100%,40% 50%)' }} />
@@ -147,11 +147,11 @@ export function HomeScreen() {
               Chào mừng đến với Bella Estate!
             </span>
           </div>
-          <h1 className="text-[4.2rem] leading-[1.02] font-extrabold [text-wrap:balance]">Mua đất, xây nhà, chinh phục thế giới</h1>
-          <p className="mt-[0.9rem] max-w-[32rem] text-[1.25rem] leading-snug text-white/80">
+          <h1 className="text-[4.2rem] leading-[1.02] font-extrabold [text-wrap:balance] portrait:text-[3rem]">Mua đất, xây nhà, chinh phục thế giới</h1>
+          <p className="mt-[0.9rem] max-w-[32rem] text-[1.25rem] leading-snug text-white/80 portrait:mx-auto">
             Cờ tỷ phú 3D ván ngắn 15–25 phút. Mua lại đất của đối thủ, gom nhóm màu, độc quyền một cạnh bàn cờ để thắng sớm.
           </p>
-          <div className="mt-[1.5rem] flex flex-wrap gap-[0.9rem]">
+          <div className="mt-[1.5rem] flex flex-wrap gap-[0.9rem] portrait:justify-center">
             <ArrowButton size="lg" onClick={go('friends')}>
               Chơi cùng bạn
             </ArrowButton>
@@ -160,9 +160,9 @@ export function HomeScreen() {
             </ArrowButton>
           </div>
         </div>
-        <div className="relative flex justify-center">
+        <div className="relative flex justify-center portrait:order-1">
           <div className="absolute top-1/2 left-1/2 h-[26rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_201_60/0.35),transparent_65%)]" />
-          <img src={ESTATE_LOGO} alt="Bella Estate" className="animate-bounce-soft relative w-[26rem] max-w-full drop-shadow-[0_1.4rem_1.6rem_rgb(10_20_80/0.45)]" />
+          <img src={ESTATE_LOGO} alt="Bella Estate" className="animate-bounce-soft relative w-[26rem] max-w-full portrait:w-[17rem] drop-shadow-[0_1.4rem_1.6rem_rgb(10_20_80/0.45)]" />
           <img src={skinById(equipped).avatar} alt="" className="absolute bottom-[0.5rem] left-[2%] h-[5.5rem] w-[5.5rem] -rotate-6 rounded-2xl border-[0.25rem] border-white bg-sky-100 shadow-xl" />
           <span className="absolute top-[12%] right-[4%] flex items-center gap-[0.3rem] rounded-full bg-white px-[0.8rem] py-[0.2rem] text-[1.1rem] font-extrabold text-amber-600 shadow-xl">
             +200 <CoinIcon />

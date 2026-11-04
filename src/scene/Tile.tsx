@@ -4,6 +4,7 @@ import type { VisualConfig } from '../config/visual'
 import { useVisual } from '../store/visualStore'
 import type { TileTransform } from './boardLayout'
 import { BuildingSet } from './Buildings'
+import { wasDragged } from '../store/viewControl'
 import { Mat } from './Mat'
 import { PickGlow, type PickState } from './PickGlow'
 import { Pop } from './Pop'
@@ -75,7 +76,7 @@ export function Tile({
       position={[layout.x, pick === 'available' || pick === 'selected' ? pickCfg.lift : 0, layout.z]}
       rotation-y={layout.rotationY}
       onClick={(e) => {
-        if (!onSelect) return
+        if (!onSelect || wasDragged()) return
         e.stopPropagation()
         onSelect(def.index)
       }}

@@ -1,6 +1,7 @@
 /** Chữ lớn giữa màn hình, thanh trên cùng, màn hình kết quả, nhắc xoay ngang. */
 import { useEffect, useMemo, useState } from 'react'
 import { FullscreenButton } from '../FullscreenButton'
+import { resetUserView } from '../../store/viewControl'
 import { setMuted, unlockAudio } from '../../audio/soundPlayer'
 import { ECONOMY } from '../../config/economy'
 import { SEAT_SKINS, skinById } from '../../config/skins'
@@ -45,6 +46,7 @@ export function TopBar() {
   const autoplay = useUiStore((s) => s.autoplayHuman)
   const [muted, setMutedState] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const zoomed = useUiStore((s) => s.viewZoomed)
   const mode = useGameStore((s) => s.mode)
   if (!game) return null
   const caption = head ? describeEvent(head.event, game) : null
@@ -58,7 +60,7 @@ export function TopBar() {
         >
           Thoát
         </button>
-        <span className="rounded-full bg-ink/80 px-[1rem] py-[0.15rem] text-[1.15rem] font-extrabold text-white shadow-md tabular-nums">
+        <span className="rounded-full bg-ink/80 px-[1rem] py-[0.15rem] text-[1.15rem] font-extrabold whitespace-nowrap text-white shadow-md tabular-nums">
           Vòng {Math.min(game.round, ECONOMY.maxRounds)}/{ECONOMY.maxRounds}
         </span>
         <button
@@ -73,6 +75,15 @@ export function TopBar() {
           {muted ? '🔇' : '🔊'}
         </button>
         <FullscreenButton />
+        {zoomed && (
+          <button
+            aria-label="Xem toàn cảnh bàn cờ"
+            className="btn-3d btn-yellow flex h-[2.2rem] items-center justify-center px-[0.8rem] text-[0.95rem] whitespace-nowrap"
+            onClick={resetUserView}
+          >
+            Toàn cảnh
+          </button>
+        )}
         {import.meta.env.DEV && (
           <button
             className={`btn-3d px-[0.8rem] py-[0.1rem] text-[0.85rem] ${autoplay ? 'btn-pink' : 'btn-gray'}`}
@@ -185,12 +196,3 @@ export function ResultModal({ onRestart, onMenu }: { onRestart: () => void; onMe
   )
 }
 
-/** Điện thoại cầm dọc: nhắc xoay ngang (giao diện thiết kế cho màn hình ngang). */
-export function RotateHint() {
-  return (
-    <div className="pointer-events-auto fixed inset-0 z-[100] hidden flex-col items-center justify-center gap-4 bg-[#1d3b5a] text-center text-white [@media(orientation:portrait)_and_(max-width:820px)]:flex">
-      <div className="animate-bounce-soft text-6xl">📱↻</div>
-      <div className="px-8 text-2xl font-extrabold">Xoay ngang điện thoại để chơi</div>
-    </div>
-  )
-}

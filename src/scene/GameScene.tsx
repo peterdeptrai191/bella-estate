@@ -4,6 +4,8 @@ import { useUiStore } from '../store/uiStore'
 import { useVisual } from '../store/visualStore'
 import { Board } from './Board'
 import { CameraRig } from './CameraRig'
+import { ViewGestures } from './ViewGestures'
+import { wasDragged } from '../store/viewControl'
 import { Dice } from './Dice'
 import { Effects } from './Effects'
 import { EventPlayer } from './events/EventPlayer'
@@ -28,11 +30,14 @@ export function GameScene() {
       flat
       dpr={[1, 2]}
       gl={{ alpha: true }}
-      onPointerMissed={() => useUiStore.getState().selectTile(null)}
+      onPointerMissed={() => {
+        if (!wasDragged()) useUiStore.getState().selectTile(null)
+      }}
       className="absolute inset-0"
       style={{ background: `linear-gradient(180deg, ${background.top} 0%, ${background.bottom} 100%)` }}
     >
       <CameraRig />
+      <ViewGestures />
       <Lights />
       <Board />
       <Dice />
