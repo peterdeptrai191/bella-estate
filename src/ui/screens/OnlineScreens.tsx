@@ -69,8 +69,8 @@ export function FriendsScreen() {
             id="room-code"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, NET.codeLength))}
-            placeholder="MÃ PHÒNG"
-            className="w-[10rem] rounded-lg border-[0.15rem] border-stone-200 bg-cream px-[0.6rem] py-[0.25rem] text-center text-[1.4rem] font-extrabold tracking-[0.25em] text-ink outline-none focus:border-sky-400"
+            placeholder="Nhập mã"
+            className="w-[10rem] rounded-lg border-[0.15rem] border-stone-200 bg-cream px-[0.6rem] py-[0.25rem] text-center text-[1.4rem] font-extrabold tracking-[0.25em] text-ink outline-none placeholder:text-[1.1rem] placeholder:tracking-normal focus:border-sky-400"
           />
           <button
             className="btn-3d btn-blue px-[1.4rem] py-[0.4rem] text-[1.15rem]"

@@ -1,44 +1,4 @@
-/** Logo Bella Estate và các hình minh họa cho thẻ trên trang chủ (SVG tự vẽ). */
-
-export function Logo({ className = '' }: { className?: string }) {
-  return (
-    <div className={`relative flex flex-col items-center select-none ${className}`} aria-label="Bella Estate">
-      <svg viewBox="0 0 120 92" className="-mb-[1.6rem] h-[6.4rem] w-auto drop-shadow-lg" aria-hidden>
-        {/* Quả địa cầu */}
-        <circle cx="60" cy="56" r="34" fill="#3fa9e8" />
-        <path d="M30 48c8-6 14-2 18 4s10 4 12-2 8-10 16-6 6 10 14 10 6-4 8-2" fill="none" stroke="#7fd36b" strokeWidth="9" strokeLinecap="round" />
-        <path d="M34 70c6 2 10-2 16 0s8 8 16 6 10-6 16-4" fill="none" stroke="#7fd36b" strokeWidth="8" strokeLinecap="round" />
-        <ellipse cx="60" cy="56" rx="34" ry="34" fill="none" stroke="#1e6fae" strokeWidth="3" />
-        <ellipse cx="60" cy="56" rx="14" ry="34" fill="none" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.6" />
-        <path d="M26 56h68" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.6" />
-        {/* Ngôi nhà isometric trên đỉnh */}
-        <g transform="translate(60 24)">
-          <polygon points="-16,0 0,8 0,-10 -16,-18" fill="#fff6e8" />
-          <polygon points="0,8 16,0 16,-18 0,-10" fill="#e9dccb" />
-          <polygon points="-18,-17 0,-9 0,-30" fill="#ff5c8a" />
-          <polygon points="0,-9 18,-17 0,-30" fill="#d93f6d" />
-          <polygon points="-11,-4 -5,-1 -5,-9 -11,-12" fill="#8fd0ff" />
-          <polygon points="4,2 10,-1 10,-10 4,-7" fill="#ffc83d" />
-        </g>
-        {/* Ngôi sao lấp lánh */}
-        <path d="M100 18l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#ffd84d" />
-        <path d="M16 30l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z" fill="#ffffff" />
-      </svg>
-      <span
-        className="relative text-[5rem] leading-[0.95] font-extrabold tracking-tight text-white"
-        style={{ WebkitTextStroke: '0.12em #1d5fa8', paintOrder: 'stroke fill', textShadow: '0 0.09em 0 #0f3f78, 0 0.18em 0.25em rgb(15 40 80 / 0.35)' }}
-      >
-        Bella
-      </span>
-      <span
-        className="relative -mt-[0.3rem] rounded-xl bg-gradient-to-b from-[#ffd34d] to-[#ffb21f] px-[1.6rem] py-[0.1rem] text-[2rem] leading-tight font-extrabold tracking-[0.25em] text-white shadow-[0_0.3rem_0_#c4840a,0_0.6rem_1rem_rgb(0_0_0/0.2)]"
-        style={{ textShadow: '0 0.08em 0 #b5760a' }}
-      >
-        ESTATE
-      </span>
-    </div>
-  )
-}
+/** Hình minh họa cho các thẻ chế độ chơi (SVG tự vẽ). Logo game/nhà phát hành là ảnh trong public/brand. */
 
 export function GlobeArt({ avatars }: { avatars: string[] }) {
   return (

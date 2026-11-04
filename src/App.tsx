@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { GameScene } from './scene/GameScene'
 import { reconnect } from './store/net'
 import { useUiStore } from './store/uiStore'
 import { Hud } from './ui/Hud'
 import { RotateHint } from './ui/hud/Overlays'
-import { HomeScreen } from './ui/screens/HomeScreen'
+import { HomeScreen, StudioSplash } from './ui/screens/HomeScreen'
+import { LandingBg } from './ui/screens/LandingBg'
 import { FriendsScreen, LobbyScreen } from './ui/screens/OnlineScreens'
 import { BotSetupScreen, MapsScreen, ShopScreen } from './ui/screens/SetupScreens'
 
@@ -17,8 +18,7 @@ function Menus() {
   const screen = useUiStore((s) => s.screen)
   return (
     <div className="absolute inset-0 overflow-hidden select-none">
-      {/* Bàn cờ 3D phía sau được làm mờ */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#bfe6f6]/55 to-[#f3efe2]/45 backdrop-blur-[3px]" />
+      <LandingBg />
       {screen === 'home' && <HomeScreen />}
       {screen === 'bots' && <BotSetupScreen />}
       {screen === 'friends' && <FriendsScreen />}
@@ -32,6 +32,13 @@ function Menus() {
 
 export default function App() {
   const screen = useUiStore((s) => s.screen)
+  const [splash, setSplash] = useState(true)
+
+  // Màn hình nhà phát hành khi mở game.
+  useEffect(() => {
+    const timer = setTimeout(() => setSplash(false), 1800)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Tải lại trang giữa ván online: tự vào lại phòng (server giữ chỗ 60 giây).
   useEffect(() => {
@@ -40,8 +47,16 @@ export default function App() {
 
   return (
     <div className="relative h-full w-full">
-      <GameScene />
-      {screen === 'game' ? <Hud /> : <Menus />}
+      {/* Bàn cờ 3D chỉ dựng khi vào trận; menu dùng nền xanh, đỡ tốn pin. */}
+      {screen === 'game' ? (
+        <>
+          <GameScene />
+          <Hud />
+        </>
+      ) : (
+        <Menus />
+      )}
+      {splash && <StudioSplash onDone={() => setSplash(false)} />}
       {VisualTuner && (
         <Suspense fallback={null}>
           <VisualTuner />

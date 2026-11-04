@@ -81,7 +81,8 @@ server     →  game-core, config, net
 
 ## Giao diện 2D và điều phối ván
 
-- Màn hình: `uiStore.screen` = `home` | `bots` | `friends` | `lobby` | `shop` | `maps` | `game`. Màn hình menu ở `ui/screens/` (phủ mờ lên bàn cờ 3D), trong trận là `ui/Hud.tsx`. Bắt đầu/chơi lại/thoát: `ui/matchSetup.ts`.
+- Màn hình: `uiStore.screen` = `home` | `bots` | `friends` | `lobby` | `shop` | `maps` | `game`. Menu ở `ui/screens/` trên nền xanh `LandingBg` (trang chủ là landing page cuộn được, theo video tham khảo); bàn cờ 3D chỉ dựng khi `screen === 'game'`. Trong trận là `ui/Hud.tsx`. Bắt đầu/chơi lại/thoát: `ui/matchSetup.ts`.
+- Thương hiệu: logo game Bella Estate và logo nhà phát hành Bella Game Studio ở `public/brand/` (đã tách nền). Mở game có màn hình giới thiệu nhà phát hành (`StudioSplash`).
 - `gameStore` có 2 chế độ: `offline` (áp action ngay, bot chạy ở `store/matchDriver.ts`) và `online` (gửi ý định lên server qua `store/net.ts`; state/event chỉ đến từ server). `seats` giữ tên, skin, người/bot, kết nối của từng ghế.
 - `store/match.ts` (thuần, có test): `levelOptions` / `previewAfter` thử chính reducer để biết xây được tới cấp nào và giá bao nhiêu. Không viết luật mới ở đây.
 - `store/matchDriver.ts` (chỉ offline): khi hàng đợi animation trống thì gửi action tự động sau một nhịp (`visual.ts › animation.botThinkDelay`), hoặc bật đồng hồ 20 giây (`ECONOMY.turnTimeLimitSec`) và hết giờ thì gửi `getTimeoutAction`. Online thì server làm việc này.
