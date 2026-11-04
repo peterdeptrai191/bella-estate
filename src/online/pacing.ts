@@ -33,6 +33,7 @@ export function eventSeconds(event: GameEvent): number {
     case 'EXTRA_ROLL':
       return a.cardPause
     case 'FESTIVAL_HOSTED':
+    case 'EARTHQUAKE_NO_TARGET':
     case 'HOUSE_DESTROYED':
     case 'PROPERTY_SOLD':
     case 'RENT_WAIVED':

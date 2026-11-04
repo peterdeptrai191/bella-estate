@@ -579,6 +579,8 @@ function resolveCard(ctx, card) {
     case "EARTHQUAKE":
       if (CITY_INDICES.some((i) => isEarthquakeTarget(s, player.id, i))) {
         s.turn.pending = { type: "EARTHQUAKE" };
+      } else {
+        emit(ctx, { type: "EARTHQUAKE_NO_TARGET", playerId: player.id });
       }
       return;
     case "GO_TO_ISLAND":
@@ -1751,6 +1753,7 @@ function eventSeconds(event) {
     case "EXTRA_ROLL":
       return a.cardPause;
     case "FESTIVAL_HOSTED":
+    case "EARTHQUAKE_NO_TARGET":
     case "HOUSE_DESTROYED":
     case "PROPERTY_SOLD":
     case "RENT_WAIVED":

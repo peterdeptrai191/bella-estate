@@ -18,7 +18,7 @@ Những điểm GDD chưa nói rõ, đã được chọn khi viết `src/game-co
 | 12 | Nhà miễn phí ở Xuất Phát | Chỉ +1 nhà (không lên Landmark). Áp dụng cả khi tới bằng thẻ "Về Xuất Phát". | `turn.test.ts`, `cards.test.ts` |
 | 13 | Rút thẻ | Mỗi lần rút chọn ngẫu nhiên đều trong 10 loại (không dùng chồng bài). | `cards.test.ts` |
 | 14 | Dùng thẻ | "Ra Đảo" và "Lá Chắn" người chơi chủ động dùng (`USE_CARD`). "Giảm Giá" tự áp vào lần trả thuê kế tiếp. | `cards.test.ts` |
-| 15 | Động Đất | Có mục tiêu (thành phố đối thủ có 1–3 nhà) thì bắt buộc chọn, không có thì thẻ mất tác dụng. | `cards.test.ts` |
+| 15 | Động Đất | Phá **ngay trong lượt rút thẻ**: có mục tiêu (thành phố đối thủ có 1–3 nhà) thì bắt buộc chọn trước khi kết thúc lượt. Không có mục tiêu thì thẻ mất tác dụng và game báo "Đối thủ chưa có nhà để phá" (event `EARTHQUAKE_NO_TARGET`). | `cards.test.ts` |
 | 16 | Hòa khi hết vòng | Bằng tổng tài sản thì ai nhiều tiền mặt hơn thắng. | `win.test.ts` |
 | 17 | 3 nhóm màu | Nhóm cao cấp (2 ô) tính là một nhóm như các nhóm khác. | `win.test.ts` |
 | 18 | Hết 20 giây | game-core không đếm giờ. `getTimeoutAction(state)` trả action mặc định (tự tung, tự trả, bỏ qua lựa chọn) để store/server gọi khi hết giờ. | `simulation.test.ts` |

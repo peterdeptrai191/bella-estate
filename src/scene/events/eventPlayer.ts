@@ -173,6 +173,11 @@ export async function playEvent(event: GameEvent): Promise<void> {
       apply(event)
       await wait(a.cardPause / 2)
       return
+    case 'EARTHQUAKE_NO_TARGET':
+      banner('Đối thủ chưa có nhà để phá', 'info')
+      apply(event)
+      await wait(a.cardPause)
+      return
     case 'HOUSE_DESTROYED':
       playSound('earthquake')
       apply(event)

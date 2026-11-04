@@ -44,8 +44,11 @@ export function resolveCard(ctx: Ctx, card: CardId): void {
       landOn(ctx)
       return
     case 'EARTHQUAKE':
+      // Có mục tiêu thì phải chọn ngay trong lượt này (việc bắt buộc, chặn kết thúc lượt).
       if (CITY_INDICES.some((i) => isEarthquakeTarget(s, player.id, i))) {
         s.turn.pending = { type: 'EARTHQUAKE' }
+      } else {
+        emit(ctx, { type: 'EARTHQUAKE_NO_TARGET', playerId: player.id })
       }
       return
     case 'GO_TO_ISLAND':

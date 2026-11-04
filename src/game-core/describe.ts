@@ -78,6 +78,8 @@ export function describeEvent(event: GameEvent, state: GameState): string {
       return `${name(event.playerId)} ở Sân Bay — lượt sau được bay`
     case 'FESTIVAL_HOSTED':
       return `${name(event.playerId)} tổ chức Lễ Hội ở ${tile(event.tileIndex)} (tiền thuê x2)`
+    case 'EARTHQUAKE_NO_TARGET':
+      return `Động Đất: đối thủ chưa có nhà nào để phá — thẻ không có tác dụng`
     case 'HOUSE_DESTROYED':
       return `Động Đất! ${name(event.byPlayerId)} phá 1 nhà ở ${tile(event.tileIndex)} của ${name(event.owner)} (còn ${levelName(event.level)})`
     case 'DEBT_STARTED':

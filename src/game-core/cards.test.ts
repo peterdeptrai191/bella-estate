@@ -78,9 +78,19 @@ describe('10 thẻ Cơ Hội (GDD mục 6)', () => {
     expect(eventsOf(events, 'HOUSE_DESTROYED')[0]).toMatchObject({ owner: 'p2', tileIndex: P1, level: 1 })
   })
 
-  it('Động Đất: không có nhà nào để phá thì không có hiệu ứng', () => {
-    const { state } = draw(own(newGame(), 'p2', [B3], 0), 'EARTHQUAKE')
+  it('Động Đất: không có nhà nào để phá thì không có hiệu ứng, có event báo cho người chơi', () => {
+    const { state, events } = draw(own(newGame(), 'p2', [B3], 0), 'EARTHQUAKE')
     expect(state.turn.pending).toBeNull()
+    expect(eventsOf(events, 'EARTHQUAKE_NO_TARGET')).toHaveLength(1)
+  })
+
+  it('Động Đất: phải phá ngay trong lượt — chưa chọn nhà thì không kết thúc lượt được', () => {
+    const s = own(newGame(), 'p2', [P1], 2)
+    const { state } = draw(s, 'EARTHQUAKE')
+    expect(() => act(state, { type: 'END_TURN' })).toThrow(GameRuleError)
+    const { state: next } = act(state, { type: 'EARTHQUAKE', tileIndex: P1 })
+    expect(next.turn.pending).toBeNull()
+    expect(next.tiles[P1].level).toBe(1)
   })
 
   it('Ra Đảo Ngay: bị đưa ra Đảo Hoang', () => {

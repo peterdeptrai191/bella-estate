@@ -139,6 +139,8 @@ export type GameEvent =
   | { type: 'AIRPORT_TICKET'; playerId: PlayerId }
   | { type: 'FESTIVAL_HOSTED'; playerId: PlayerId; tileIndex: number; previousTile: number | null }
   | { type: 'HOUSE_DESTROYED'; byPlayerId: PlayerId; owner: PlayerId; tileIndex: number; level: number }
+  /** Rút thẻ Động Đất nhưng không đối thủ nào có nhà để phá (thẻ mất tác dụng). */
+  | { type: 'EARTHQUAKE_NO_TARGET'; playerId: PlayerId }
   | { type: 'DEBT_STARTED'; playerId: PlayerId; amount: number; reason: DebtReason }
   | { type: 'PROPERTY_SOLD'; playerId: PlayerId; tileIndex: number; amount: number }
   | { type: 'BANKRUPT'; playerId: PlayerId; releasedTiles: number[] }
