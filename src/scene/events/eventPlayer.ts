@@ -62,7 +62,7 @@ async function coins(from: PlayerId | null, to: PlayerId | null, event: GameEven
 async function movePiece(event: Extract<GameEvent, { type: 'PLAYER_MOVED' }>) {
   const { playerId, from, mode } = event
   beginControl(playerId)
-  followPiece(pieceObject(playerId) ?? null)
+  if (visual().animation.cameraFollow) followPiece(pieceObject(playerId) ?? null)
   try {
     if (mode === 'WALK') {
       // Nhảy từng ô; cập nhật view từng bước để các quân khác xếp lại chỗ.

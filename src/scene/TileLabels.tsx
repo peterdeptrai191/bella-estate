@@ -42,8 +42,11 @@ export function TileLabels() {
               rotation-x={-Math.PI / 2}
               scale={[1, tileText.stretch, 1]}
               raycast={() => null}
+              // Vẽ đè lên nhà/Landmark để tên ô không bị che (nét viền trắng giữ chữ dễ đọc).
+              renderOrder={tileText.renderOrder}
             >
               {t.def.name}
+              <meshBasicMaterial depthTest={!tileText.alwaysOnTop} depthWrite={false} transparent toneMapped={false} />
             </Text>
           </group>
         )

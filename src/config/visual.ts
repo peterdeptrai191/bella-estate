@@ -233,6 +233,9 @@ export const VISUAL = {
     /** Khoảng cách từ mép ngoài ô vào trong (tỷ lệ chiều sâu ô): ô thường / ô góc. */
     edgeInset: 0.17,
     cornerEdgeInset: 0.1,
+    /** Luôn vẽ tên ô đè lên nhà/Landmark (không bị che khi đã xây). */
+    alwaysOnTop: true,
+    renderOrder: 20,
   },
 
   /** Nhãn tiền thuê trên các ô có chủ. */
@@ -323,6 +326,8 @@ export const VISUAL = {
     coinSize: 0.2,
     coinColor: '#ffc94d',
     /** Camera bám quân đang đi: mức zoom thêm và tốc độ bám. */
+    /** Camera bám theo quân đang đi (tắt: giữ nguyên góc nhìn, người chơi tự zoom/kéo). */
+    cameraFollow: false,
     cameraFollowZoom: 1.2,
     cameraFollowSpeed: 4,
     /** Dừng lại khi rút thẻ / đầu lượt. */
