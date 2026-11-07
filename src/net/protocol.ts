@@ -104,6 +104,7 @@ export type ApiRequest =
   | { op: 'start'; code: string; token: string }
   | { op: 'intent'; code: string; token: string; actions: IntentAction[]; since: number }
   | { op: 'leave'; code: string; token: string }
+  | { op: 'resume'; code: string; token: string }
   | { op: 'poll'; code: string; token: string; since: number }
 
 /** Vào phòng thành công: mã phòng + khóa bí mật của ghế (lưu lại để vào lại khi mất mạng / tải lại trang). */

@@ -252,6 +252,17 @@ export function intents(room: Room, token: string, actions: IntentAction[], now:
   }
 }
 
+/** Người chơi quay lại sau khi bot đã chơi thay: tắt bot, lấy lại ghế. */
+export function resumeSeat(room: Room, token: string, now: number): void {
+  const seat = seatOf(room, token)
+  if (!seat) throw new GameRuleError('Bạn không có ghế trong ván này')
+  if (!room.game || room.game.phase !== 'playing') throw new GameRuleError('Ván đã kết thúc')
+  seat.kind = 'human'
+  seat.lastSeen = now
+  // Đang tới lượt mình: tính lại 20 giây từ bây giờ.
+  if (room.deadline && room.deadline.playerId === seat.playerId) room.deadline = null
+}
+
 /** Cập nhật "còn ở đây" cho người chơi. Trả về true nếu có thay đổi đáng lưu. */
 export function touch(room: Room, token: string, now: number, force = false): boolean {
   const watcher = spectatorOf(room, token)
@@ -288,11 +299,10 @@ export function tick(room: Room, now: number, rng: Rng): boolean {
       return false
     }
   }
-  // Mất kết nối quá lâu: giao hẳn ghế cho bot.
+  // Mất kết nối quá lâu: bot chơi thay hẳn, nhưng GIỮ khóa ghế — người chơi quay lại thì bấm "Tắt bot" để chơi tiếp.
   for (const seat of room.seats) {
     if (seat.kind === 'human' && now - seat.lastSeen > NET.reconnectSec * 1000) {
       seat.kind = 'bot'
-      seat.token = null
       changed = true
     }
   }

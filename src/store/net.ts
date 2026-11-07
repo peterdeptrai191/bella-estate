@@ -24,8 +24,8 @@ let failures = 0
 
 function saveSession(s: Session | null) {
   try {
-    if (s) sessionStorage.setItem(SESSION_KEY, JSON.stringify(s))
-    else sessionStorage.removeItem(SESSION_KEY)
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s))
+    else localStorage.removeItem(SESSION_KEY)
   } catch {
     // Không lưu được: chỉ mất khả năng tự vào lại khi tải lại trang.
   }
@@ -33,7 +33,7 @@ function saveSession(s: Session | null) {
 
 function readSession(): Session | null {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY)
+    const raw = localStorage.getItem(SESSION_KEY)
     if (!raw) return null
     const data: unknown = JSON.parse(raw)
     if (data && typeof data === 'object' && 'code' in data && 'token' in data) {
@@ -216,6 +216,20 @@ export function startNow() {
     .catch((error: unknown) => useOnlineStore.getState().set({ error: error instanceof Error ? error.message : String(error) }))
 }
 
+/** Bot đang chơi thay (mất kết nối lâu): tắt bot, chơi tiếp. */
+export function resumeControl() {
+  const current = session
+  if (!current) return
+  call<RoomView>({ op: 'resume', code: current.code, token: current.token })
+    .then((view) => {
+      if (session !== current) return
+      since = -1
+      accept(view)
+      useUiStore.getState().showBanner('Đã tắt bot — bạn chơi tiếp!', 'good', 1.6)
+    })
+    .catch((error: unknown) => useUiStore.getState().showBanner(error instanceof Error ? error.message : 'Có lỗi máy chủ.', 'bad', 1.6))
+}
+
 export async function leaveRoom() {
   const current = session
   stop()
@@ -223,7 +237,7 @@ export async function leaveRoom() {
   if (current) await call({ op: 'leave', code: current.code, token: current.token }).catch(() => undefined)
 }
 
-/** Vào lại phòng cũ khi tải lại trang (server giữ chỗ 60 giây, trong lúc đó bot chơi thay). */
+/** Vào lại phòng cũ khi tải lại trang hoặc mở lại trình duyệt (khóa ghế lưu trong localStorage). Mất kết nối lâu thì bot chơi thay; quay lại bấm "Tắt bot" để chơi tiếp. */
 export async function reconnect(): Promise<boolean> {
   const saved = readSession()
   if (!saved) return false

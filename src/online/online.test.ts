@@ -142,7 +142,7 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     expect(after.game?.state.turn.dice).not.toBeNull()
   })
 
-  it('mất kết nối: bot chơi thay; quay lại thì nhận lại toàn bộ ván; quá 60 giây thì ghế giao cho bot', async () => {
+  it('mất kết nối: bot chơi thay; quay lại thì nhận lại toàn bộ ván; quá 60 giây vẫn giữ ghế, bấm Tắt bot để chơi tiếp', async () => {
     const { post, poll, advance } = setup()
     const a = await post<JoinResponse>({ op: 'create', name: 'An', skin: '', capacity: 2 })
     const b = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '' })
@@ -162,8 +162,18 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
       advance(5000)
       await poll(a.code, b.token, -1)
     }
-    const gone = await poll(a.code, a.token, -1)
-    expect(gone.status).toBe(403)
+    const taken = await poll(a.code, a.token, -1)
+    expect(taken.status).toBe(200)
+    const view = taken.body as RoomView
+    expect(view.lobby.seats[0].kind).toBe('bot')
+    // Bot đang chơi thay: ý định bị từ chối cho tới khi tắt bot.
+    await expect(post({ op: 'intent', code: a.code, token: a.token, actions: [{ type: 'ROLL_DICE' }], since: -1 })).rejects.toThrow('bot')
+    const resumed = await post<RoomView>({ op: 'resume', code: a.code, token: a.token })
+    expect(resumed.lobby.seats[0]).toMatchObject({ kind: 'human', connected: true })
+    expect(resumed.game?.full).toBe(true)
+    // Tự thoát thì không lấy lại được ghế.
+    await post({ op: 'leave', code: a.code, token: a.token })
+    expect((await poll(a.code, a.token, -1)).status).toBe(403)
   })
 
   it('ghép nhanh: 2 người vào cùng một bàn chờ; mã sai báo không tìm thấy', async () => {

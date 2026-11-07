@@ -4,7 +4,7 @@
  */
 import { GameRuleError } from '../game-core'
 import { NET, type ApiRequest, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
-import { createRoom, intents, isMember, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
+import { createRoom, intents, isMember, resumeSeat, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
 import type { RoomStore } from './store'
 
 export interface ApiResult {
@@ -167,6 +167,18 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
               tick(room, now(), rng)
               intents(room, t, actions as IntentAction[], now(), rng)
               return { changed: true, result: viewFor(room, t, since, now()) }
+            }),
+          }
+        }
+        case 'resume': {
+          const c = code(body.code)
+          const t = token(body.token)
+          return {
+            status: 200,
+            body: await mutate(c, (room) => {
+              resumeSeat(room, t, now())
+              tick(room, now(), rng)
+              return { changed: true, result: viewFor(room, t, -1, now()) }
             }),
           }
         }

@@ -14,6 +14,7 @@ import { TilePickPrompt, RentShieldPopup, SellPanel, HintPanel } from '../popups
 import { CardDeck } from '../popups/CardPopup'
 import { BuyoutPopup, CityPopup, ResortPopup } from '../popups/PropertyPopup'
 import { useBoardPick } from '../useBoardPick'
+import { useBotTakeover } from '../useBotTakeover'
 
 function RollButton({ playerId, label = 'TUNG XÚC XẮC' }: { playerId: string; label?: string }) {
   return (
@@ -149,9 +150,11 @@ export function PromptLayer() {
   const animating = useIsAnimating()
   const card = useUiStore((s) => s.card)
   const awaiting = useGameStore((s) => s.awaitingServer)
+  // Online: bot đang chơi thay ghế của mình thì không hiện nút (bấm "Tắt bot" trước).
+  const takeover = useBotTakeover()
   const prompt = useMemo(
-    () => (game && !animating && !autoplay ? humanPrompt(game, humanId) : null),
-    [game, animating, autoplay, humanId],
+    () => (game && !animating && !autoplay && !takeover ? humanPrompt(game, humanId) : null),
+    [game, animating, autoplay, takeover, humanId],
   )
   if (!game || !prompt || card || awaiting) return null
   // key: mỗi quyết định mới dựng popup mới (chọn cấp nhà… bắt đầu lại từ đầu).

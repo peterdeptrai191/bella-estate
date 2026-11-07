@@ -15,6 +15,7 @@ import { exitToMenu, playAgain } from './matchSetup'
 import { CardReveal } from './popups/CardPopup'
 import { TileInfo } from './popups/TileInfo'
 import { HelpPopup } from './popups/HelpPopup'
+import { BotTakeoverBanner } from './hud/BotTakeover'
 
 function WaitingPill() {
   const view = useAnimationStore((s) => s.view)
@@ -63,6 +64,7 @@ export function Hud() {
       <CardReveal />
       <TileInfo />
       <HelpPopup />
+      <BotTakeoverBanner />
       <ResultModal onRestart={playAgain} onMenu={() => void exitToMenu()} />
     </div>
   )

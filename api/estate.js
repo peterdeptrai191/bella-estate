@@ -2050,6 +2050,14 @@ function intents(room, token2, actions, now, rng) {
     }
   }
 }
+function resumeSeat(room, token2, now) {
+  const seat = seatOf(room, token2);
+  if (!seat) throw new GameRuleError("B\u1EA1n kh\xF4ng c\xF3 gh\u1EBF trong v\xE1n n\xE0y");
+  if (!room.game || room.game.phase !== "playing") throw new GameRuleError("V\xE1n \u0111\xE3 k\u1EBFt th\xFAc");
+  seat.kind = "human";
+  seat.lastSeen = now;
+  if (room.deadline && room.deadline.playerId === seat.playerId) room.deadline = null;
+}
 function touch(room, token2, now, force = false) {
   const watcher = spectatorOf(room, token2);
   if (watcher) {
@@ -2081,7 +2089,6 @@ function tick(room, now, rng) {
   for (const seat of room.seats) {
     if (seat.kind === "human" && now - seat.lastSeen > NET.reconnectSec * 1e3) {
       seat.kind = "bot";
-      seat.token = null;
       changed = true;
     }
   }
@@ -2317,6 +2324,18 @@ function createApi(store, deps) {
               tick(room, now(), rng);
               intents(room, t, actions, now(), rng);
               return { changed: true, result: viewFor(room, t, since, now()) };
+            })
+          };
+        }
+        case "resume": {
+          const c = code(body.code);
+          const t = token(body.token);
+          return {
+            status: 200,
+            body: await mutate(c, (room) => {
+              resumeSeat(room, t, now());
+              tick(room, now(), rng);
+              return { changed: true, result: viewFor(room, t, -1, now()) };
             })
           };
         }
