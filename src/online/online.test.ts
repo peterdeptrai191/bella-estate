@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ECONOMY } from '../config/economy'
 import { getTimeoutAction, humanPrompt } from '../game-core'
-import { NET, type JoinResponse, type RoomView } from '../net/protocol'
+import { NET, type AuthResponse, type JoinResponse, type MeResponse, type RoomView } from '../net/protocol'
 import { createApi } from './handler'
 import { createRoom, joinRoom, randomCode, requestStart, tick, viewFor, type Rng } from './room'
 import { memoryStore, redisCredentials } from './store'
@@ -329,6 +329,53 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     const { api } = setup()
     const r = await api('GET', new URLSearchParams({ op: 'health' }), null)
     expect(r.body).toEqual({ ok: true, storage: 'memory', onlineReady: true })
+  })
+})
+
+describe('Tài khoản', () => {
+  function setup() {
+    let now = 2_000_000
+    const api = createApi(memoryStore(), { now: () => now, rng: testRng(11) })
+    const post = async <T>(body: Record<string, unknown>) => {
+      const r = await api('POST', new URLSearchParams(), body)
+      if (r.status !== 200) throw new Error((r.body as { error: string }).error)
+      return r.body as T
+    }
+    return { post, advance: (ms: number) => (now += ms) }
+  }
+
+  it('đăng ký, trùng tên bị từ chối, đăng nhập sai/đúng mật khẩu, đăng xuất', async () => {
+    const { post } = setup()
+    const reg = await post<AuthResponse>({ op: 'register', username: 'Duy_01', password: 'matkhau1', name: 'Duy' })
+    expect(reg.account).toEqual({ username: 'duy_01', name: 'Duy' })
+    await expect(post({ op: 'register', username: 'duy_01', password: 'khac123' })).rejects.toThrow('đã có')
+    await expect(post({ op: 'register', username: 'a', password: 'matkhau1' })).rejects.toThrow('Tên đăng nhập')
+    await expect(post({ op: 'register', username: 'ngan', password: '123' })).rejects.toThrow('Mật khẩu')
+    await expect(post({ op: 'login', username: 'duy_01', password: 'sai-mat-khau' })).rejects.toThrow('Sai')
+    const login = await post<AuthResponse>({ op: 'login', username: 'DUY_01', password: 'matkhau1' })
+    expect((await post<MeResponse>({ op: 'me', auth: login.token })).account?.name).toBe('Duy')
+    await post({ op: 'logout', auth: login.token })
+    expect((await post<MeResponse>({ op: 'me', auth: login.token })).account).toBeNull()
+    expect((await post<MeResponse>({ op: 'me', auth: reg.token })).account?.username).toBe('duy_01')
+  })
+
+  it('đăng nhập ở máy khác vẫn vào lại đúng ghế; "me" báo phòng đang chơi; trình duyệt không giả được mã tài khoản', async () => {
+    const { post } = setup()
+    const duy = await post<AuthResponse>({ op: 'register', username: 'duy', password: 'matkhau1', name: 'Duy' })
+    const lan = await post<AuthResponse>({ op: 'register', username: 'lan', password: 'matkhau2', name: 'Lan' })
+    const a = await post<JoinResponse>({ op: 'create', name: 'x', skin: '', capacity: 2, auth: duy.token, clientId: 'browser-aaaaaaaaaaaaaaaa' })
+    expect(a.view.lobby.seats[0].name).toBe('Duy')
+    await post<JoinResponse>({ op: 'join', code: a.code, name: 'y', skin: '', auth: lan.token })
+    // Máy khác: đăng nhập lại (khóa phiên mới), trình duyệt khác.
+    const other = await post<AuthResponse>({ op: 'login', username: 'duy', password: 'matkhau1' })
+    const me = await post<MeResponse>({ op: 'me', auth: other.token })
+    expect(me.activeRoom).toBe(a.code)
+    const back = await post<JoinResponse>({ op: 'join', code: a.code, name: 'z', skin: '', auth: other.token, clientId: 'browser-bbbbbbbbbbbbbbbb' })
+    expect(back.view.lobby.spectating).toBe(false)
+    expect(back.view.game?.you).toBe('p1')
+    // Không đăng nhập mà khai mã tài khoản: thành người xem.
+    const fake = await post<JoinResponse>({ op: 'join', code: a.code, name: 'z', skin: '', clientId: 'user-duy-aaaaaaaaaaaaa' })
+    expect(fake.view.lobby.spectating).toBe(true)
   })
 })
 

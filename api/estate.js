@@ -1424,6 +1424,18 @@ var NET = {
   /** Phòng tự xóa sau bấy nhiêu giây không ai đụng tới. */
   roomTtlSec: 6 * 3600
 };
+var AUTH = {
+  usernameMin: 3,
+  usernameMax: 20,
+  passwordMin: 6,
+  nameMax: 12,
+  /** Phiên đăng nhập sống bấy nhiêu giây (30 ngày). */
+  sessionTtlSec: 30 * 24 * 3600,
+  /** Tài khoản lưu bấy nhiêu giây kể từ lần đổi gần nhất (5 năm). */
+  accountTtlSec: 5 * 365 * 24 * 3600,
+  /** Nhớ phòng đang chơi của tài khoản bấy nhiêu giây. */
+  activeRoomTtlSec: 6 * 3600
+};
 
 // src/config/skins.ts
 var character = (file, name, price) => ({
@@ -2195,6 +2207,102 @@ function viewFor(room, token2, since, now) {
   };
 }
 
+// src/online/auth.ts
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+var AuthError = class extends Error {
+  status;
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+};
+var userKey = (username) => `estate:user:${username}`;
+var sessionKey = (token2) => `estate:session:${token2}`;
+var roomKey = (username) => `estate:user-room:${username}`;
+function normalizeUsername(value) {
+  const u = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (!new RegExp(`^[a-z0-9_]{${AUTH.usernameMin},${AUTH.usernameMax}}$`).test(u)) {
+    throw new AuthError(400, `T\xEAn \u0111\u0103ng nh\u1EADp ${AUTH.usernameMin}\u2013${AUTH.usernameMax} k\xFD t\u1EF1, ch\u1EC9 g\u1ED3m ch\u1EEF kh\xF4ng d\u1EA5u, s\u1ED1 v\xE0 d\u1EA5u _`);
+  }
+  return u;
+}
+function checkPassword(value) {
+  const p = typeof value === "string" ? value : "";
+  if (p.length < AUTH.passwordMin || p.length > 100) throw new AuthError(400, `M\u1EADt kh\u1EA9u c\u1EA7n \xEDt nh\u1EA5t ${AUTH.passwordMin} k\xFD t\u1EF1`);
+  return p;
+}
+function hashPassword(password, salt) {
+  return scryptSync(password, salt, 32).toString("hex");
+}
+var accountClientId = (username) => `user-${username}`;
+function createAuth(store, deps) {
+  async function newSession(user) {
+    const token2 = deps.token();
+    await store.write(sessionKey(token2), null, user.username, AUTH.sessionTtlSec);
+    return { token: token2, account: { username: user.username, name: user.name } };
+  }
+  async function readUser(username) {
+    const raw = await store.read(userKey(username));
+    return raw ? JSON.parse(raw) : null;
+  }
+  return {
+    async register(body) {
+      const username = normalizeUsername(body.username);
+      const password = checkPassword(body.password);
+      const name = (typeof body.name === "string" ? body.name.trim() : "").slice(0, AUTH.nameMax) || username;
+      const salt = randomBytes(16).toString("hex");
+      const user = { username, name, salt, hash: hashPassword(password, salt), createdAt: deps.now() };
+      if (!await store.write(userKey(username), null, JSON.stringify(user), AUTH.accountTtlSec)) {
+        throw new AuthError(409, "T\xEAn \u0111\u0103ng nh\u1EADp \u0111\xE3 c\xF3 ng\u01B0\u1EDDi d\xF9ng");
+      }
+      return newSession(user);
+    },
+    async login(body) {
+      const username = normalizeUsername(body.username);
+      const password = checkPassword(body.password);
+      const user = await readUser(username);
+      const ok = user !== null && timingSafeEqual(Buffer.from(hashPassword(password, user.salt), "hex"), Buffer.from(user.hash, "hex"));
+      if (!user || !ok) throw new AuthError(401, "Sai t\xEAn \u0111\u0103ng nh\u1EADp ho\u1EB7c m\u1EADt kh\u1EA9u");
+      return newSession(user);
+    },
+    /** Tài khoản của khóa phiên (null nếu không hợp lệ / hết hạn). */
+    async accountOf(token2) {
+      if (typeof token2 !== "string" || !/^[a-z0-9]{32}$/.test(token2)) return null;
+      const username = await store.read(sessionKey(token2));
+      if (!username) return null;
+      const user = await readUser(username);
+      return user ? { username: user.username, name: user.name } : null;
+    },
+    async logout(token2) {
+      if (typeof token2 !== "string" || !/^[a-z0-9]{32}$/.test(token2)) return;
+      const raw = await store.read(sessionKey(token2));
+      if (raw) await store.write(sessionKey(token2), raw, "", 1);
+    },
+    /** Đổi tên hiển thị. */
+    async rename(account, name) {
+      const next = (typeof name === "string" ? name.trim() : "").slice(0, AUTH.nameMax);
+      if (!next) throw new AuthError(400, "T\xEAn kh\xF4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const raw = await store.read(userKey(account.username));
+        if (!raw) throw new AuthError(404, "Kh\xF4ng t\xECm th\u1EA5y t\xE0i kho\u1EA3n");
+        const user = JSON.parse(raw);
+        if (await store.write(userKey(account.username), raw, JSON.stringify({ ...user, name: next }), AUTH.accountTtlSec)) {
+          return { username: user.username, name: next };
+        }
+      }
+      throw new AuthError(409, "Th\u1EED l\u1EA1i nh\xE9");
+    },
+    /** Ghi nhớ phòng đang chơi của tài khoản (để hiện nút "Vào lại ván"). */
+    async setActiveRoom(username, code2) {
+      const before = await store.read(roomKey(username));
+      await store.write(roomKey(username), before, code2 ?? "", code2 ? AUTH.activeRoomTtlSec : 1);
+    },
+    async activeRoom(username) {
+      return await store.read(roomKey(username)) || null;
+    }
+  };
+}
+
 // src/online/handler.ts
 var HttpError = class extends Error {
   status;
@@ -2203,7 +2311,7 @@ var HttpError = class extends Error {
     this.status = status;
   }
 };
-var roomKey = (code2) => `estate:room:${code2}`;
+var roomKey2 = (code2) => `estate:room:${code2}`;
 var QUICK_KEY = "estate:quick";
 var CODE_RE = new RegExp(`^[${NET.codeAlphabet}]{${NET.codeLength}}$`);
 function str(value, max) {
@@ -2221,7 +2329,8 @@ function token(value) {
 }
 function joinRequest(body) {
   const clientId = str(body.clientId, 64);
-  return { name: str(body.name, 40), skin: str(body.skin, 40), .../^[a-zA-Z0-9-]{16,64}$/.test(clientId) ? { clientId } : {} };
+  const valid = /^[a-zA-Z0-9-]{16,64}$/.test(clientId) && !clientId.startsWith("user-");
+  return { name: str(body.name, 40), skin: str(body.skin, 40), ...valid ? { clientId } : {} };
 }
 function createApi(store, deps) {
   const { now, rng } = deps;
@@ -2229,8 +2338,23 @@ function createApi(store, deps) {
     if (!store) throw new HttpError(503, "Ch\u01B0a c\u1EA5u h\xECnh kho d\u1EEF li\u1EC7u online. Ch\u1EE7 game c\u1EA7n th\xEAm Upstash Redis tr\xEAn Vercel.");
     return store;
   };
+  const auth = store ? createAuth(store, { now, token: () => randomToken(rng) }) : null;
+  const requireAuth = () => {
+    if (!auth) throw new HttpError(503, "Ch\u01B0a c\u1EA5u h\xECnh kho d\u1EEF li\u1EC7u online. Ch\u1EE7 game c\u1EA7n th\xEAm Upstash Redis tr\xEAn Vercel.");
+    return auth;
+  };
+  async function withAccount(body) {
+    const join = joinRequest(body);
+    const account = auth ? await auth.accountOf(body.auth) : null;
+    if (!account) return { join, username: null };
+    return { join: { ...join, name: account.name, clientId: accountClientId(account.username) }, username: account.username };
+  }
+  async function remember(username, joined) {
+    if (username && auth) await auth.setActiveRoom(username, joined.code);
+    return joined;
+  }
   const load = async (c) => {
-    const raw = await requireStore().read(roomKey(c));
+    const raw = await requireStore().read(roomKey2(c));
     return { raw, room: raw ? JSON.parse(raw) : null };
   };
   async function mutate(c, fn) {
@@ -2239,7 +2363,7 @@ function createApi(store, deps) {
       if (!room) throw new HttpError(404, "Kh\xF4ng t\xECm th\u1EA5y ph\xF2ng.");
       const { changed, result } = fn(room);
       if (!changed) return result;
-      if (await requireStore().write(roomKey(c), raw, JSON.stringify(room), NET.roomTtlSec)) return result;
+      if (await requireStore().write(roomKey2(c), raw, JSON.stringify(room), NET.roomTtlSec)) return result;
     }
     throw new HttpError(409, "Ph\xF2ng \u0111ang b\u1EADn, th\u1EED l\u1EA1i nh\xE9.");
   }
@@ -2249,7 +2373,7 @@ function createApi(store, deps) {
       const t = randomToken(rng);
       const room = createRoom(c, mode, capacity, now(), maxRounds);
       joinRoom(room, join, t, now(), rng);
-      if (await requireStore().write(roomKey(c), null, JSON.stringify(room), NET.roomTtlSec)) {
+      if (await requireStore().write(roomKey2(c), null, JSON.stringify(room), NET.roomTtlSec)) {
         return { code: c, token: t, view: viewFor(room, t, -1, now()) };
       }
     }
@@ -2298,12 +2422,45 @@ function createApi(store, deps) {
       if (method !== "POST") throw new HttpError(405, "Ph\u01B0\u01A1ng th\u1EE9c kh\xF4ng \u0111\u01B0\u1EE3c h\u1ED7 tr\u1EE3.");
       const body = rawBody && typeof rawBody === "object" ? rawBody : {};
       switch (body.op) {
-        case "create":
-          return { status: 200, body: await createAndJoin("private", Number(body.capacity), joinRequest(body), Number(body.maxRounds)) };
-        case "quick":
-          return { status: 200, body: await quick(joinRequest(body)) };
-        case "join":
-          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body), true) };
+        case "create": {
+          const { join, username } = await withAccount(body);
+          return { status: 200, body: await remember(username, await createAndJoin("private", Number(body.capacity), join, Number(body.maxRounds))) };
+        }
+        case "quick": {
+          const { join, username } = await withAccount(body);
+          return { status: 200, body: await remember(username, await quick(join)) };
+        }
+        case "join": {
+          const { join, username } = await withAccount(body);
+          return { status: 200, body: await remember(username, await joinExisting(code(body.code), join, true)) };
+        }
+        case "register":
+          return { status: 200, body: await requireAuth().register(body) };
+        case "login":
+          return { status: 200, body: await requireAuth().login(body) };
+        case "logout":
+          await requireAuth().logout(body.auth);
+          return { status: 200, body: { ok: true } };
+        case "rename": {
+          const account = await requireAuth().accountOf(body.auth);
+          if (!account) throw new HttpError(401, "Phi\xEAn \u0111\u0103ng nh\u1EADp \u0111\xE3 h\u1EBFt, \u0111\u0103ng nh\u1EADp l\u1EA1i nh\xE9.");
+          return { status: 200, body: { account: await requireAuth().rename(account, body.name) } };
+        }
+        case "me": {
+          const a2 = requireAuth();
+          const account = await a2.accountOf(body.auth);
+          if (!account) return { status: 200, body: { account: null, activeRoom: null } };
+          let activeRoom = await a2.activeRoom(account.username);
+          if (activeRoom) {
+            const { room } = await load(activeRoom).catch(() => ({ room: null }));
+            const mine = room?.seats.some((s) => s.clientId === accountClientId(account.username));
+            if (!room || !mine || room.game?.phase === "finished") {
+              await a2.setActiveRoom(account.username, null);
+              activeRoom = null;
+            }
+          }
+          return { status: 200, body: { account, activeRoom } };
+        }
         case "poll":
           return { status: 200, body: await poll(code(body.code), token(body.token), Number(body.since ?? -1)) };
         case "start": {
@@ -2361,7 +2518,7 @@ function createApi(store, deps) {
           throw new HttpError(400, "Y\xEAu c\u1EA7u kh\xF4ng h\u1EE3p l\u1EC7.");
       }
     } catch (error) {
-      if (error instanceof HttpError) return { status: error.status, body: { error: error.message } };
+      if (error instanceof HttpError || error instanceof AuthError) return { status: error.status, body: { error: error.message } };
       if (error instanceof GameRuleError) return { status: 400, body: { error: error.message } };
       console.error("[estate-api]", error);
       return { status: 500, body: { error: "C\xF3 l\u1ED7i m\xE1y ch\u1EE7. Vui l\xF2ng th\u1EED l\u1EA1i." } };

@@ -3,8 +3,9 @@
  * trả { status, body }. Dùng ở Vercel Function (api/estate.ts) và ở dev server Vite.
  */
 import { GameRuleError } from '../game-core'
-import { NET, type ApiRequest, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
+import { NET, type MeResponse, type ApiRequest, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
 import { createRoom, intents, isMember, resumeSeat, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
+import { accountClientId, AuthError, createAuth } from './auth'
 import type { RoomStore } from './store'
 
 export interface ApiResult {
@@ -42,7 +43,9 @@ function token(value: unknown): string {
 
 function joinRequest(body: Record<string, unknown>): JoinRequest {
   const clientId = str(body.clientId, 64)
-  return { name: str(body.name, 40), skin: str(body.skin, 40), ...(/^[a-zA-Z0-9-]{16,64}$/.test(clientId) ? { clientId } : {}) }
+  // Mã "user-…" dành riêng cho tài khoản (server tự gán sau khi xác thực) — trình duyệt không tự khai được.
+  const valid = /^[a-zA-Z0-9-]{16,64}$/.test(clientId) && !clientId.startsWith('user-')
+  return { name: str(body.name, 40), skin: str(body.skin, 40), ...(valid ? { clientId } : {}) }
 }
 
 export function createApi(store: RoomStore | null, deps: { now: () => number; rng: Rng }) {
@@ -51,6 +54,25 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
   const requireStore = (): RoomStore => {
     if (!store) throw new HttpError(503, 'Chưa cấu hình kho dữ liệu online. Chủ game cần thêm Upstash Redis trên Vercel.')
     return store
+  }
+
+  const auth = store ? createAuth(store, { now, token: () => randomToken(rng) }) : null
+  const requireAuth = () => {
+    if (!auth) throw new HttpError(503, 'Chưa cấu hình kho dữ liệu online. Chủ game cần thêm Upstash Redis trên Vercel.')
+    return auth
+  }
+
+  /** Vào phòng khi đã đăng nhập: ghế gắn với tài khoản (tên hiển thị của tài khoản). */
+  async function withAccount(body: Record<string, unknown>): Promise<{ join: JoinRequest; username: string | null }> {
+    const join = joinRequest(body)
+    const account = auth ? await auth.accountOf(body.auth) : null
+    if (!account) return { join, username: null }
+    return { join: { ...join, name: account.name, clientId: accountClientId(account.username) }, username: account.username }
+  }
+
+  async function remember(username: string | null, joined: JoinResponse): Promise<JoinResponse> {
+    if (username && auth) await auth.setActiveRoom(username, joined.code)
+    return joined
   }
 
   const load = async (c: string): Promise<{ raw: string | null; room: Room | null }> => {
@@ -132,12 +154,46 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
       if (method !== 'POST') throw new HttpError(405, 'Phương thức không được hỗ trợ.')
       const body = (rawBody && typeof rawBody === 'object' ? rawBody : {}) as Record<string, unknown> & Partial<ApiRequest>
       switch (body.op) {
-        case 'create':
-          return { status: 200, body: await createAndJoin('private', Number(body.capacity), joinRequest(body), Number(body.maxRounds)) }
-        case 'quick':
-          return { status: 200, body: await quick(joinRequest(body)) }
-        case 'join':
-          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body), true) }
+        case 'create': {
+          const { join, username } = await withAccount(body)
+          return { status: 200, body: await remember(username, await createAndJoin('private', Number(body.capacity), join, Number(body.maxRounds))) }
+        }
+        case 'quick': {
+          const { join, username } = await withAccount(body)
+          return { status: 200, body: await remember(username, await quick(join)) }
+        }
+        case 'join': {
+          const { join, username } = await withAccount(body)
+          return { status: 200, body: await remember(username, await joinExisting(code(body.code), join, true)) }
+        }
+        case 'register':
+          return { status: 200, body: await requireAuth().register(body) }
+        case 'login':
+          return { status: 200, body: await requireAuth().login(body) }
+        case 'logout':
+          await requireAuth().logout(body.auth)
+          return { status: 200, body: { ok: true } }
+        case 'rename': {
+          const account = await requireAuth().accountOf(body.auth)
+          if (!account) throw new HttpError(401, 'Phiên đăng nhập đã hết, đăng nhập lại nhé.')
+          return { status: 200, body: { account: await requireAuth().rename(account, body.name) } }
+        }
+        case 'me': {
+          const a = requireAuth()
+          const account = await a.accountOf(body.auth)
+          if (!account) return { status: 200, body: { account: null, activeRoom: null } satisfies MeResponse }
+          // Chỉ báo phòng còn tồn tại, còn đang chơi/chờ, và tài khoản còn ghế trong đó.
+          let activeRoom = await a.activeRoom(account.username)
+          if (activeRoom) {
+            const { room } = await load(activeRoom).catch(() => ({ room: null }))
+            const mine = room?.seats.some((s) => s.clientId === accountClientId(account.username))
+            if (!room || !mine || room.game?.phase === 'finished') {
+              await a.setActiveRoom(account.username, null)
+              activeRoom = null
+            }
+          }
+          return { status: 200, body: { account, activeRoom } satisfies MeResponse }
+        }
         case 'poll':
           return { status: 200, body: await poll(code(body.code), token(body.token), Number(body.since ?? -1)) }
         case 'start': {
@@ -196,7 +252,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
           throw new HttpError(400, 'Yêu cầu không hợp lệ.')
       }
     } catch (error) {
-      if (error instanceof HttpError) return { status: error.status, body: { error: error.message } }
+      if (error instanceof HttpError || error instanceof AuthError) return { status: error.status, body: { error: error.message } }
       if (error instanceof GameRuleError) return { status: 400, body: { error: error.message } }
       console.error('[estate-api]', error)
       return { status: 500, body: { error: 'Có lỗi máy chủ. Vui lòng thử lại.' } }

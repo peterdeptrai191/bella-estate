@@ -1,6 +1,7 @@
 /** Bảng đặt tên lần đầu vào game (hồ sơ chưa có tên riêng). Tên dùng cho cả chơi với bot và online. */
 import { useState } from 'react'
 import { META, skinById } from '../config/skins'
+import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
 import { Modal } from './kit'
 
@@ -52,6 +53,12 @@ export function NamePrompt() {
         </div>
         <button className="btn-3d btn-green w-full py-[0.55rem] text-[1.35rem]" disabled={!name} onClick={submit}>
           Vào chơi
+        </button>
+        <button
+          className="text-[1rem] font-extrabold text-sky-600 underline-offset-2 hover:underline"
+          onClick={() => useAuthStore.getState().setOpen(true)}
+        >
+          Đã có tài khoản? Đăng nhập
         </button>
       </div>
     </Modal>

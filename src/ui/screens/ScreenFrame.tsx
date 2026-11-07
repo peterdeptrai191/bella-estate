@@ -4,11 +4,13 @@ import { setMuted, unlockAudio } from '../../audio/soundPlayer'
 import { META, skinById } from '../../config/skins'
 import { formatMoney } from '../../game-core'
 import { useProfileStore } from '../../store/profileStore'
+import { useAuthStore } from '../../store/authStore'
 import { useUiStore, type Screen } from '../../store/uiStore'
 import { CoinIcon, Ribbon } from '../kit'
 
 export function ProfileChip() {
   const { name, skin, gold, setName } = useProfileStore()
+  const account = useAuthStore((s) => s.account)
   const [editing, setEditing] = useState(false)
   return (
     <div className="pointer-events-auto flex items-center gap-[0.6rem] rounded-2xl bg-cream/95 py-[0.35rem] pr-[1rem] pl-[0.35rem] shadow-lg">
@@ -21,7 +23,9 @@ export function ProfileChip() {
             maxLength={META.maxNameLength}
             defaultValue={name}
             onBlur={(e) => {
-              setName(e.currentTarget.value.trim() || META.defaultName)
+              const next = e.currentTarget.value.trim() || META.defaultName
+              setName(next)
+              void useAuthStore.getState().rename(next)
               setEditing(false)
             }}
             onKeyDown={(e) => {
@@ -37,6 +41,21 @@ export function ProfileChip() {
         <span className="flex items-center gap-[0.3rem] text-[1.1rem] font-extrabold text-amber-600 tabular-nums">
           {formatMoney(gold)} <CoinIcon /> <span className="text-[0.85rem] font-bold text-stone-400">Vàng</span>
         </span>
+        {account ? (
+          <span className="flex items-center gap-[0.4rem] text-[0.85rem] font-bold text-stone-400">
+            @{account.username}
+            <button className="text-sky-600 underline-offset-2 hover:underline" onClick={() => void useAuthStore.getState().logout()}>
+              Đăng xuất
+            </button>
+          </span>
+        ) : (
+          <button
+            className="self-start text-[0.9rem] font-extrabold text-sky-600 underline-offset-2 hover:underline"
+            onClick={() => useAuthStore.getState().setOpen(true)}
+          >
+            Đăng nhập / Tạo tài khoản
+          </button>
+        )}
       </div>
     </div>
   )

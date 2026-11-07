@@ -20,6 +20,12 @@ File chính:
 - `src/online/vercel.ts` → bundle thành `api/estate.js`.
 - `src/store/net.ts` — client: tạo/vào phòng, polling, tự vào lại.
 
+## Tài khoản
+
+- Cùng endpoint `/api/estate`: `register`, `login`, `me`, `logout`, `rename` (`src/online/auth.ts`).
+- Redis: `estate:user:<tên>` (hồ sơ + mật khẩu băm scrypt), `estate:session:<khóa>` → tên (30 ngày), `estate:user-room:<tên>` → mã phòng đang chơi (6 giờ).
+- Vào phòng kèm `auth` thì ghế gắn với tài khoản (`clientId = user-<tên>`), nên đăng nhập ở máy khác rồi vào lại phòng là nhận đúng ghế.
+
 ## Chạy trên máy
 
 `npm run dev` — dev server tự phục vụ `/api/estate` và lưu phòng trong bộ nhớ (mất khi tắt). Mở 2 tab (1 tab thường + 1 tab ẩn danh) → "Chơi cùng bạn" → tạo phòng ở tab này, nhập mã ở tab kia.

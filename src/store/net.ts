@@ -4,6 +4,7 @@
  * animation phát giống hệt chơi offline.
  */
 import { API_PATH, NET, type DeadlineInfo, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
+import { authToken, useAuthStore } from './authStore'
 import { useGameStore } from './gameStore'
 import { useOnlineStore } from './onlineStore'
 import { useUiStore } from './uiStore'
@@ -202,7 +203,10 @@ async function run(label: string, body: Record<string, unknown>) {
   const online = useOnlineStore.getState()
   online.set({ status: 'connecting', error: null, lobby: null, pendingLabel: label })
   try {
-    begin(await call<JoinResponse>({ ...body, clientId: clientId() }))
+    const auth = authToken()
+    const joined = await call<JoinResponse>({ ...body, clientId: clientId(), ...(auth ? { auth } : {}) })
+    begin(joined)
+    if (auth) useAuthStore.setState({ activeRoom: joined.code })
   } catch (error) {
     online.set({ status: 'error', error: error instanceof Error ? error.message : String(error) })
   }
@@ -257,6 +261,7 @@ export function resumeControl() {
 export async function leaveRoom() {
   const current = session
   stop()
+  useAuthStore.setState({ activeRoom: null })
   useOnlineStore.getState().set({ status: 'idle', lobby: null, error: null })
   if (current) await call({ op: 'leave', code: current.code, token: current.token }).catch(() => undefined)
 }

@@ -37,6 +37,38 @@ export const NET = {
   roomTtlSec: 6 * 3600,
 } as const
 
+/** Tài khoản người chơi. */
+export const AUTH = {
+  usernameMin: 3,
+  usernameMax: 20,
+  passwordMin: 6,
+  nameMax: 12,
+  /** Phiên đăng nhập sống bấy nhiêu giây (30 ngày). */
+  sessionTtlSec: 30 * 24 * 3600,
+  /** Tài khoản lưu bấy nhiêu giây kể từ lần đổi gần nhất (5 năm). */
+  accountTtlSec: 5 * 365 * 24 * 3600,
+  /** Nhớ phòng đang chơi của tài khoản bấy nhiêu giây. */
+  activeRoomTtlSec: 6 * 3600,
+} as const
+
+export interface AccountInfo {
+  username: string
+  name: string
+}
+
+/** Đăng ký / đăng nhập thành công. */
+export interface AuthResponse {
+  token: string
+  account: AccountInfo
+}
+
+/** Thông tin phiên đăng nhập hiện tại. */
+export interface MeResponse {
+  account: AccountInfo | null
+  /** Mã phòng đang chơi dở (nếu còn), để vào lại. */
+  activeRoom: string | null
+}
+
 export type IntentAction = GameAction extends infer A ? (A extends { playerId: PlayerId } ? Omit<A, 'playerId'> : never) : never
 
 export interface SeatInfo {
@@ -97,6 +129,8 @@ export interface JoinRequest {
   skin: string
   /** Mã nhận diện trình duyệt (lưu localStorage). Vào lại phòng cũ bằng mã phòng thì nhận lại đúng ghế của mình. */
   clientId?: string
+  /** Khóa phiên đăng nhập: có thì ghế gắn với tài khoản (vào lại được từ máy khác). */
+  auth?: string
 }
 
 export type ApiRequest =
@@ -107,6 +141,11 @@ export type ApiRequest =
   | { op: 'intent'; code: string; token: string; actions: IntentAction[]; since: number }
   | { op: 'leave'; code: string; token: string }
   | { op: 'resume'; code: string; token: string }
+  | { op: 'register'; username: string; password: string; name?: string }
+  | { op: 'login'; username: string; password: string }
+  | { op: 'me'; auth: string }
+  | { op: 'logout'; auth: string }
+  | { op: 'rename'; auth: string; name: string }
   | { op: 'poll'; code: string; token: string; since: number }
 
 /** Vào phòng thành công: mã phòng + khóa bí mật của ghế (lưu lại để vào lại khi mất mạng / tải lại trang). */

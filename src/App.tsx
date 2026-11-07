@@ -2,7 +2,10 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { GameScene } from './scene/GameScene'
 import { reconnect } from './store/net'
 import { useUiStore } from './store/uiStore'
+import { useAuthStore } from './store/authStore'
+import { AccountModal } from './ui/AccountModal'
 import { Hud } from './ui/Hud'
+import { ResumeGameBanner } from './ui/ResumeGameBanner'
 import { NamePrompt } from './ui/NamePrompt'
 import { HomeScreen, StudioSplash } from './ui/screens/HomeScreen'
 import { LandingBg } from './ui/screens/LandingBg'
@@ -25,13 +28,21 @@ function Menus() {
       {screen === 'lobby' && <LobbyScreen />}
       {screen === 'shop' && <ShopScreen />}
       {screen === 'maps' && <MapsScreen />}
+      <ResumeGameBanner />
     </div>
   )
 }
 
 export default function App() {
   const screen = useUiStore((s) => s.screen)
+  const authOpen = useAuthStore((s) => s.open)
   const [splash, setSplash] = useState(true)
+
+  // Kiểm tra phiên đăng nhập đã lưu khi mở game và mỗi lần quay lại menu (cập nhật ván đang chơi dở).
+  const inGame = screen === 'game'
+  useEffect(() => {
+    if (!inGame) void useAuthStore.getState().refresh()
+  }, [inGame])
 
   // Màn hình nhà phát hành khi mở game.
   useEffect(() => {
@@ -56,7 +67,8 @@ export default function App() {
         <Menus />
       )}
       {/* Lần đầu vào game: hỏi tên (sau màn hình nhà phát hành). */}
-      {!splash && screen !== 'game' && <NamePrompt />}
+      {!splash && screen !== 'game' && !authOpen && <NamePrompt />}
+      <AccountModal />
       {splash && <StudioSplash onDone={() => setSplash(false)} />}
       {VisualTuner && (
         <Suspense fallback={null}>
