@@ -3,6 +3,7 @@ import { GameScene } from './scene/GameScene'
 import { reconnect } from './store/net'
 import { useUiStore } from './store/uiStore'
 import { Hud } from './ui/Hud'
+import { NamePrompt } from './ui/NamePrompt'
 import { HomeScreen, StudioSplash } from './ui/screens/HomeScreen'
 import { LandingBg } from './ui/screens/LandingBg'
 import { FriendsScreen, LobbyScreen } from './ui/screens/OnlineScreens'
@@ -54,6 +55,8 @@ export default function App() {
       ) : (
         <Menus />
       )}
+      {/* Lần đầu vào game: hỏi tên (sau màn hình nhà phát hành). */}
+      {!splash && screen !== 'game' && <NamePrompt />}
       {splash && <StudioSplash onDone={() => setSplash(false)} />}
       {VisualTuner && (
         <Suspense fallback={null}>

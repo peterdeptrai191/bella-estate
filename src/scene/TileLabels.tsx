@@ -1,10 +1,10 @@
 import { Text } from '@react-three/drei'
 import { useMemo, type ReactNode } from 'react'
-import { BOARD } from '../config/board'
 import { formatMoney, rentFor } from '../game-core'
 import { useAnimationStore } from '../store/animationStore'
 import { useVisual } from '../store/visualStore'
 import { computeTileLayout, localToBoard, type TileTransform } from './boardLayout'
+import { TEXT_CHARACTERS } from './textAtlas'
 
 /**
  * Chữ in phẳng trên mặt ô, xoay để luôn đọc xuôi từ góc camera (ô ở hai cạnh xa camera thì lật 180°).
@@ -12,9 +12,6 @@ import { computeTileLayout, localToBoard, type TileTransform } from './boardLayo
  * số tiền to ở phần phía ngoài — giá mua khi chưa có chủ, tiền thuê hiện tại (chữ trắng viền màu chủ) khi đã có chủ.
  * Ô đặc biệt chỉ có tên. Chữ vẽ đè lên nhà/Landmark nên không bị che.
  */
-/** Mọi ký tự có thể in trên ô: tạo sẵn cả bộ trong atlas một lần, tránh atlas phải nới rộng giữa chừng (máy yếu có thể mất chữ). */
-const CHARACTERS = [...new Set(BOARD.map((t) => t.name + t.name.toUpperCase()).join('') + '0123456789.,K ')].join('')
-
 export function TileLabels() {
   const { board, tileText, camera, playerColors } = useVisual()
   const layout = useMemo(() => computeTileLayout(board), [board])
@@ -56,7 +53,7 @@ export function TileLabels() {
           raycast={() => null}
           renderOrder={tileText.renderOrder}
           sdfGlyphSize={tileText.sdfGlyphSize}
-          characters={CHARACTERS}
+          characters={TEXT_CHARACTERS}
         >
           {text}
           <meshBasicMaterial depthTest={!tileText.alwaysOnTop} depthWrite={false} transparent toneMapped={false} />

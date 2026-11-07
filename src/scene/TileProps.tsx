@@ -3,7 +3,7 @@ import type { TileKind } from '../config/board'
 import { useVisual } from '../store/visualStore'
 import { Mat } from './Mat'
 
-function PalmTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+export function PalmTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const { props } = useVisual()
   return (
     <group position={position} scale={scale}>

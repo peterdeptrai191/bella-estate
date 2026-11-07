@@ -1445,7 +1445,9 @@ var META = {
   goldLose: 30,
   /** Tên mặc định của người chơi. */
   defaultName: "B\u1EA1n",
-  maxNameLength: 12
+  maxNameLength: 12,
+  /** Gợi ý khi bấm "Tên ngẫu nhiên" ở bảng đặt tên. */
+  nameSuggestions: ["T\u1EF7 Ph\xFA Nh\xED", "Vua \u0110\u1EA5t", "\u0110\u1EA1i Gia", "S\xF3i Ph\u1ED1 Wall", "Bella Fan", "Ch\u1EE7 T\u1ECBch", "Nh\xE0 \u0110\u1EA7u T\u01B0", "Lucky Star", "C\xE1 M\u1EADp", "M\xE8o Th\u1EA7n T\xE0i"]
 };
 
 // src/config/visual.ts
@@ -1534,6 +1536,35 @@ var VISUAL = {
     flag: "#ff6f91",
     pole: "#d9d4cc"
   },
+  /** Trang trí theo trạng thái ván (scene/Decorations.tsx). */
+  decor: {
+    /** Bãi biển Khu Du Lịch đã có chủ. */
+    resortAccent: "#ffd84d",
+    wood: "#c79a6b",
+    /** Lễ Hội Thế Giới. */
+    gold: "#ffc94d",
+    glowColor: "#ffd84d",
+    glowOpacity: 0.55,
+    poleHeight: 0.7,
+    flagColors: ["#ff5c8a", "#ffd84d", "#4fc3f7", "#7ed957", "#b388ff", "#ff9f43"],
+    balloonColors: ["#ff5c8a", "#ffd84d", "#4fc3f7", "#7ed957", "#b388ff"],
+    balloonHeight: 1.15,
+    balloonSize: 0.085,
+    string: "#ffffff",
+    confettiCount: 48,
+    confettiHeight: 1.4,
+    burstSparks: 32,
+    burstColors: ["#ffd84d", "#ff5c8a", "#4fc3f7", "#ffffff"],
+    burstHeight: 1.45,
+    burstRadius: 0.48,
+    /** Chu kỳ một chùm pháo hoa (giây). */
+    burstPeriod: 2.2,
+    signText: "L\u1EC4 H\u1ED8I x2",
+    signHeight: 1.75,
+    signFontSize: 0.3,
+    signColor: "#ff3d7f",
+    signOutline: "#ffffff"
+  },
   buildings: {
     /** Kích thước cạnh một căn nhà. */
     houseSize: 0.3,
@@ -1579,7 +1610,13 @@ var VISUAL = {
     balcony: "#ffffff"
   },
   /** Màu mái nhà theo người chơi 1–4. */
-  playerColors: ["#ff6f91", "#4da3ff", "#4cc983", "#ffb547"],
+  /**
+   * Màu 4 người chơi: đỏ / xanh dương / xanh lá / tím, đậm và bão hoà để khác hẳn màu pastel của các nhóm đất
+   * (không dùng vàng, cam, hồng vì trùng nhóm Châu Âu, Trung Đông, Nam Mỹ).
+   */
+  playerColors: ["#e63946", "#2f6fed", "#12a150", "#9b45e4"],
+  /** Viền trắng quanh tấm màu chủ đất (tách tấm màu khỏi dải màu nhóm). */
+  ownerRim: "#ffffff",
   material: {
     /** Độ nhám (0 = bóng, 1 = mờ). */
     roughness: 0.82,

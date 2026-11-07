@@ -6,6 +6,7 @@ import { Board } from './Board'
 import { CameraRig } from './CameraRig'
 import { ViewGestures } from './ViewGestures'
 import { TargetFrame } from './TargetFrame'
+import { FestivalCelebration } from './Decorations'
 import { DiceTotal } from './DiceTotal'
 import { BoardCenterTracker } from './BoardCenterTracker'
 import { wasDragged } from '../store/viewControl'
@@ -44,6 +45,9 @@ export function GameScene() {
       <Lights />
       <Board />
       <TargetFrame />
+      <Suspense fallback={null}>
+        <FestivalCelebration />
+      </Suspense>
       <Dice />
       <DiceTotal />
       <BoardCenterTracker />

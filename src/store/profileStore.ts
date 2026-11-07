@@ -12,6 +12,8 @@ interface Profile {
   owned: string[]
   /** Ván đã nhận thưởng (chống nhận hai lần). */
   rewarded: string[]
+  /** Người chơi đã tự đặt tên (chưa đặt thì hỏi tên khi vào game). */
+  named: boolean
 }
 
 interface ProfileStore extends Profile {
@@ -27,7 +29,7 @@ const KEY = 'bella-estate:profile'
 const freeSkins = SKINS.filter((s) => s.price === 0).map((s) => s.id)
 
 function load(): Profile {
-  const fallback: Profile = { name: META.defaultName, skin: DEFAULT_SKIN, gold: META.startingGold, owned: freeSkins, rewarded: [] }
+  const fallback: Profile = { name: META.defaultName, skin: DEFAULT_SKIN, gold: META.startingGold, owned: freeSkins, rewarded: [], named: false }
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return fallback
@@ -40,6 +42,8 @@ function load(): Profile {
       gold: typeof p.gold === 'number' && p.gold >= 0 ? Math.floor(p.gold) : fallback.gold,
       owned: Array.from(new Set([...freeSkins, ...(Array.isArray(p.owned) ? p.owned.filter((x) => typeof x === 'string') : [])])),
       rewarded: Array.isArray(p.rewarded) ? p.rewarded.filter((x) => typeof x === 'string').slice(-20) : [],
+      // Hồ sơ cũ chưa có cờ này: coi là đã đặt tên nếu tên khác tên mặc định.
+      named: p.named === true || (typeof p.name === 'string' && p.name.trim() !== '' && p.name.trim() !== META.defaultName),
     }
   } catch {
     return fallback
@@ -54,12 +58,12 @@ function save(p: Profile) {
   }
 }
 
-const pick = (s: ProfileStore): Profile => ({ name: s.name, skin: s.skin, gold: s.gold, owned: s.owned, rewarded: s.rewarded })
+const pick = (s: ProfileStore): Profile => ({ name: s.name, skin: s.skin, gold: s.gold, owned: s.owned, rewarded: s.rewarded, named: s.named })
 
 export const useProfileStore = create<ProfileStore>((set, get) => ({
   ...load(),
   setName: (name) => {
-    set({ name: name.slice(0, META.maxNameLength) })
+    set({ name: name.slice(0, META.maxNameLength), named: true })
     save(pick(get()))
   },
   equip: (skinId) => {

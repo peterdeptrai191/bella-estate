@@ -70,4 +70,6 @@ export const META = {
   /** Tên mặc định của người chơi. */
   defaultName: 'Bạn',
   maxNameLength: 12,
+  /** Gợi ý khi bấm "Tên ngẫu nhiên" ở bảng đặt tên. */
+  nameSuggestions: ['Tỷ Phú Nhí', 'Vua Đất', 'Đại Gia', 'Sói Phố Wall', 'Bella Fan', 'Chủ Tịch', 'Nhà Đầu Tư', 'Lucky Star', 'Cá Mập', 'Mèo Thần Tài'],
 } as const

@@ -7,6 +7,7 @@ import { BuildingSet } from './Buildings'
 import { wasDragged } from '../store/viewControl'
 import { Mat } from './Mat'
 import { PickGlow, type PickState } from './PickGlow'
+import { ResortDecor } from './Decorations'
 import { Pop } from './Pop'
 import { useMountedFlag } from './useMountedFlag'
 import { TileProps } from './TileProps'
@@ -55,7 +56,7 @@ export function Tile({
   pickTone?: 'good' | 'bad'
   onSelect?: (tileIndex: number) => void
 }) {
-  const { board, colors, props, pick: pickCfg } = useVisual()
+  const { board, colors, props, pick: pickCfg, ownerRim } = useVisual()
   const mounted = useMountedFlag()
   const { def, width, depth } = layout
   const w = width - board.tileGap
@@ -127,8 +128,18 @@ export function Tile({
       {building && (
         <group position={[0, top, contentZ]}>
           <Pop animate={mounted}>
+            {/* Viền trắng bên dưới tấm màu chủ */}
             <RoundedBox
-              args={[w * 0.9, board.stripHeight, (groupColor ? d - stripDepth : d) * 0.86]}
+              args={[w * 0.96, board.stripHeight * 0.8, (groupColor ? d - stripDepth : d) * 0.92]}
+              radius={Math.min(board.tileRadius, board.stripHeight / 2)}
+              smoothness={board.tileSmoothness}
+              position={[0, board.stripHeight * 0.4, 0]}
+              receiveShadow
+            >
+              <Mat color={ownerRim} />
+            </RoundedBox>
+            <RoundedBox
+              args={[w * 0.86, board.stripHeight, (groupColor ? d - stripDepth : d) * 0.82]}
               radius={Math.min(board.tileRadius, board.stripHeight / 2)}
               smoothness={board.tileSmoothness}
               position={[0, board.stripHeight / 2, 0]}
@@ -145,6 +156,12 @@ export function Tile({
       <group position={[0, top + board.stripHeight, contentZ]}>
         <group scale={props.scale}>
           <TileProps kind={def.kind} />
+          {/* Khu Du Lịch đã có chủ: bãi biển đông vui hơn. */}
+          {def.kind === 'RESORT' && building && (
+            <Pop animate={mounted}>
+              <ResortDecor color={building.color} />
+            </Pop>
+          )}
         </group>
         <BuildingSet level={building?.level ?? 0} color={building?.color ?? colors.tile} width={w} group={def.group} cityName={def.name} />
       </group>
