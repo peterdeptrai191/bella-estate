@@ -57,7 +57,7 @@ export const VISUAL = {
     /** Bãi cỏ thấp hơn mặt ô bao nhiêu. */
     centerDrop: 0.12,
     /** Tỷ lệ chiều sâu ô dành cho dải màu nhóm (phía trong bàn cờ). */
-    stripRatio: 0.3,
+    stripRatio: 0.36,
     /** Độ dày dải màu nhóm nhô lên khỏi mặt ô. */
     stripHeight: 0.03,
   },
@@ -234,10 +234,10 @@ export const VISUAL = {
     edgeInset: 0.17,
     cornerEdgeInset: 0.1,
     /** Ô mua được (kiểu Business Tour): tên IN HOA trên dải màu nhóm. */
-    nameFontSize: 0.15,
-    nameColor: '#ffffff',
-    nameOutlineColor: '#2d2a3e',
-    nameOutlineWidth: 0.16,
+    nameFontSize: 0.19,
+    nameColor: '#2d2a3e',
+    nameOutlineColor: '#ffffff',
+    nameOutlineWidth: 0.2,
     /** Số tiền to ở phần trắng phía ngoài ô: giá mua (chưa có chủ) hoặc tiền thuê (màu chủ). */
     priceFontSize: 0.28,
     priceOutlineWidth: 0.16,
