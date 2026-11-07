@@ -27,6 +27,8 @@ export const NET = {
   pollMs: 900,
   lobbyPollMs: 1500,
   hiddenPollMs: 4000,
+  /** Số ý định tối đa trong một lần bấm (Mua đất + 3 nhà + Kết thúc lượt…). */
+  maxIntentBatch: 8,
   /** Mức bot server dùng để lấp ghế và chơi thay. */
   botLevel: 'normal' as BotLevel,
   /** Giữ lại bấy nhiêu lô event gần nhất để client hỏi bù (quá thì gửi lại toàn bộ state). */
@@ -100,7 +102,7 @@ export type ApiRequest =
   | ({ op: 'join'; code: string } & JoinRequest)
   | ({ op: 'quick' } & JoinRequest)
   | { op: 'start'; code: string; token: string }
-  | { op: 'intent'; code: string; token: string; action: IntentAction; since: number }
+  | { op: 'intent'; code: string; token: string; actions: IntentAction[]; since: number }
   | { op: 'leave'; code: string; token: string }
   | { op: 'poll'; code: string; token: string; since: number }
 

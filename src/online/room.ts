@@ -237,6 +237,21 @@ export function intent(room: Room, token: string, action: IntentAction, now: num
   apply(room, { ...action, playerId: seat.playerId } as GameAction, now, rng)
 }
 
+/**
+ * Một lần bấm gồm nhiều ý định (vd. Mua đất → Xây nhà ×3 → Kết thúc lượt): áp lần lượt trong cùng một lần ghi.
+ * Ý định đầu bị từ chối thì báo lỗi; ý định sau bị từ chối (state đã đổi) thì dừng, giữ phần đã áp.
+ */
+export function intents(room: Room, token: string, actions: IntentAction[], now: number, rng: Rng): void {
+  for (let i = 0; i < actions.length; i++) {
+    try {
+      intent(room, token, actions[i], now, rng)
+    } catch (error) {
+      if (i === 0 || !(error instanceof GameRuleError)) throw error
+      break
+    }
+  }
+}
+
 /** Cập nhật "còn ở đây" cho người chơi. Trả về true nếu có thay đổi đáng lưu. */
 export function touch(room: Room, token: string, now: number, force = false): boolean {
   const watcher = spectatorOf(room, token)

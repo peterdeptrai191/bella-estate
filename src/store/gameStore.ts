@@ -43,13 +43,14 @@ interface GameStore {
   awaitingServer: boolean
   offlineConfig: OfflineConfig | null
   /** Hàm gửi ý định lên server (do store/net.ts gắn vào khi vào phòng). */
-  sendIntent: ((action: IntentAction) => void) | null
+  /** Online: gửi một lần bấm (một hoặc nhiều ý định, server áp theo đúng thứ tự trong một yêu cầu). */
+  sendIntent: ((actions: IntentAction[]) => void) | null
 
   startOffline: (config: OfflineConfig, seed?: number | string) => void
   /** Áp/gửi một action. Offline: action sai luật ném GameRuleError (state giữ nguyên). */
   dispatch: (action: GameAction) => void
   dispatchMany: (actions: GameAction[]) => void
-  loadRemote: (state: GameState, seats: SeatInfo[], you: PlayerId | null, matchId: string, send: (a: IntentAction) => void) => void
+  loadRemote: (state: GameState, seats: SeatInfo[], you: PlayerId | null, matchId: string, send: (a: IntentAction[]) => void) => void
   applyRemote: (state: GameState, events: GameEvent[]) => void
   updateSeats: (seats: SeatInfo[]) => void
   reset: () => void
@@ -107,24 +108,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  dispatch: (action) => {
+  dispatch: (action) => get().dispatchMany([action]),
+
+  dispatchMany: (actions) => {
     const { game, mode, sendIntent } = get()
-    if (!game) return
+    if (!game || actions.length === 0) return
     if (mode === 'online') {
       if (!sendIntent) return
-      const { playerId: _ignored, ...intent } = action
-      void _ignored
-      sendIntent(intent as IntentAction)
+      // Gộp cả lần bấm vào MỘT yêu cầu: gửi rời từng cái thì có thể tới server sai thứ tự (Kết thúc lượt trước Mua).
+      sendIntent(
+        actions.map((action) => {
+          const { playerId: _ignored, ...intent } = action
+          void _ignored
+          return intent as IntentAction
+        }),
+      )
       set({ awaitingServer: true })
       return
     }
-    const { state, events } = applyAction(game, action)
-    set({ game: state, actionCount: get().actionCount + 1 })
-    useAnimationStore.getState().enqueue(events)
-  },
-
-  dispatchMany: (actions) => {
-    for (const action of actions) get().dispatch(action)
+    for (const action of actions) {
+      const { state, events } = applyAction(get().game ?? game, action)
+      set({ game: state, actionCount: get().actionCount + 1 })
+      useAnimationStore.getState().enqueue(events)
+    }
   },
 
   loadRemote: (state, seats, you, matchId, send) => {

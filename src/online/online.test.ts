@@ -256,6 +256,42 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     expect(myTurns).toBeGreaterThan(2)
   })
 
+  it('một lần bấm Mua đất + xây nhà + kết thúc lượt: server áp đúng thứ tự trong một yêu cầu', async () => {
+    const { post, poll, advance } = setup()
+    const a = await post<JoinResponse>({ op: 'create', name: 'An', skin: '', capacity: 2 })
+    const b = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '' })
+    void b
+    // Tung cho tới khi An dừng ở một ô mua được (tối đa vài lượt), mỗi lần bấm là một yêu cầu.
+    for (let guard = 0; guard < 60; guard++) {
+      advance(5000)
+      const view = (await poll(a.code, a.token, -1)).body as RoomView
+      const game = view.game
+      if (!game) continue
+      const prompt = humanPrompt(game.state, game.you)
+      if (!prompt) continue
+      if (prompt.kind === 'BUY') {
+        const tile = prompt.tileIndex
+        const before = game.state.players[0].money
+        const after = await post<RoomView>({ op: 'intent', code: a.code, token: a.token, actions: [{ type: 'BUY' }, { type: 'END_TURN' }], since: game.seq })
+        const state = after.game?.state
+        expect(state?.tiles[tile].owner).toBe('p1')
+        expect(state?.players[0].money).toBeLessThan(before)
+        expect(state?.players[0].money).toBeGreaterThanOrEqual(0)
+        const types = after.game?.events.map((e) => e.type) ?? []
+        expect(types).toContain('PROPERTY_BOUGHT')
+        // Kết thúc lượt đã được áp sau khi mua (sang người kế, hoặc được tung thêm nếu vừa ra đôi).
+        expect(types.some((t) => t === 'TURN_STARTED' || t === 'EXTRA_ROLL')).toBe(true)
+        return
+      }
+      const action = getTimeoutAction(game.state)
+      if (action) {
+        const { playerId: _p, ...rest } = action
+        await post({ op: 'intent', code: a.code, token: a.token, actions: [rest], since: game.seq }).catch(() => undefined)
+      }
+    }
+    throw new Error('Không gặp ô mua được')
+  })
+
   it('kiểm tra sống trả về loại kho', async () => {
     const { api } = setup()
     const r = await api('GET', new URLSearchParams({ op: 'health' }), null)

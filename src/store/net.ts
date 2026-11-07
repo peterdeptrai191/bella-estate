@@ -77,6 +77,25 @@ function applyDeadline(info: DeadlineInfo | null) {
   useUiStore.getState().setDeadline({ playerId: info.playerId, startedAt: endsAt - info.totalMs, endsAt })
 }
 
+/**
+ * Quyết định áp câu trả lời ván đấu thế nào (thuần, có test):
+ * - `load`: dựng lại toàn bộ (lần đầu / server gửi full mới hơn).
+ * - `apply`: áp event mới, tính đúng từ mốc client đang có.
+ * - `skip`: câu trả lời cũ hoặc trùng (về muộn vì nút bấm và lần hỏi định kỳ chạy song song) — áp sẽ phát lại event đã có.
+ * - `refetch`: câu trả lời mới hơn nhưng tính từ mốc khác — bỏ qua và hỏi lại ngay từ mốc hiện tại.
+ */
+export function planAccept(
+  game: { full: boolean; seq: number; from: number },
+  since: number,
+  hasGame: boolean,
+): 'load' | 'apply' | 'skip' | 'refetch' {
+  if (!hasGame) return 'load'
+  if (game.full) return game.seq >= since ? 'load' : 'skip'
+  if (game.seq === since) return 'skip'
+  if (game.from !== since) return game.seq > since ? 'refetch' : 'skip'
+  return 'apply'
+}
+
 /** Áp câu trả lời của server: sảnh chờ, hoặc state + event của ván. */
 function accept(view: RoomView) {
   useOnlineStore.getState().set({ lobby: view.lobby, lobbyAt: Date.now() })
@@ -87,19 +106,17 @@ function accept(view: RoomView) {
     return
   }
   const store = useGameStore.getState()
-  if (game.full || store.mode !== 'online' || !store.game) {
+  const plan = planAccept(game, since, store.mode === 'online' && store.game !== null)
+  if (plan === 'load') {
     store.loadRemote(game.state, view.lobby.seats, game.you, game.matchId, sendIntent)
     useOnlineStore.getState().set({ status: 'playing', error: null })
     useUiStore.getState().setScreen('game')
-  } else if (game.seq !== since) {
-    if (game.from !== since) {
-      // Câu trả lời tính từ một mốc cũ (vd. lần hỏi định kỳ và câu trả lời của nút bấm về cùng lúc):
-      // áp vào sẽ phát lại event đã có (trừ tiền hai lần…). Bỏ qua; mới hơn thì hỏi lại ngay từ mốc hiện tại.
-      store.updateSeats(view.lobby.seats)
-      if (game.seq > since) void pollOnce()
-      return
-    }
+  } else if (plan === 'apply') {
     store.applyRemote(game.state, game.events)
+  } else {
+    store.updateSeats(view.lobby.seats)
+    if (plan === 'refetch') void pollOnce()
+    return
   }
   store.updateSeats(view.lobby.seats)
   since = game.seq
@@ -167,19 +184,24 @@ async function run(label: string, body: Record<string, unknown>) {
   }
 }
 
-function sendIntent(action: IntentAction) {
+/** Các lần bấm gửi lần lượt (lần sau chờ lần trước có câu trả lời), không chồng chéo nhau. */
+let intentChain: Promise<void> = Promise.resolve()
+
+function sendIntent(actions: IntentAction[]) {
   const current = session
-  if (!current) return
-  call<RoomView>({ op: 'intent', code: current.code, token: current.token, action, since })
-    .then((view) => {
-      if (session === current) accept(view)
-    })
-    .catch((error: unknown) => {
-      useGameStore.setState({ awaitingServer: false })
-      useUiStore.getState().showBanner(error instanceof Error ? error.message : 'Có lỗi máy chủ.', 'bad', 1.6)
-      // Máy chủ đã đi trước (vd. hết giờ lượt): hỏi lại ngay để màn hình bắt kịp, không để nút cũ nằm đó.
-      if (session === current) void pollOnce()
-    })
+  if (!current || actions.length === 0) return
+  intentChain = intentChain.then(() =>
+    call<RoomView>({ op: 'intent', code: current.code, token: current.token, actions, since })
+      .then((view) => {
+        if (session === current) accept(view)
+      })
+      .catch((error: unknown) => {
+        useGameStore.setState({ awaitingServer: false })
+        useUiStore.getState().showBanner(error instanceof Error ? error.message : 'Có lỗi máy chủ.', 'bad', 1.6)
+        // Máy chủ đã đi trước (vd. hết giờ lượt): hỏi lại ngay để màn hình bắt kịp, không để nút cũ nằm đó.
+        if (session === current) void pollOnce()
+      }),
+  )
 }
 
 export const quickMatch = (opts: JoinRequest) => run('Đang tìm trận…', { op: 'quick', ...opts })

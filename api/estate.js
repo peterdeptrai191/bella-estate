@@ -1399,6 +1399,8 @@ var NET = {
   pollMs: 900,
   lobbyPollMs: 1500,
   hiddenPollMs: 4e3,
+  /** Số ý định tối đa trong một lần bấm (Mua đất + 3 nhà + Kết thúc lượt…). */
+  maxIntentBatch: 8,
   /** Mức bot server dùng để lấp ghế và chơi thay. */
   botLevel: "normal",
   /** Giữ lại bấy nhiêu lô event gần nhất để client hỏi bù (quá thì gửi lại toàn bộ state). */
@@ -2022,6 +2024,16 @@ function intent(room, token2, action, now, rng) {
   if (currentPlayer(game).id !== seat.playerId) throw new GameRuleError("Ch\u01B0a t\u1EDBi l\u01B0\u1EE3t c\u1EE7a b\u1EA1n");
   apply(room, { ...action, playerId: seat.playerId }, now, rng);
 }
+function intents(room, token2, actions, now, rng) {
+  for (let i = 0; i < actions.length; i++) {
+    try {
+      intent(room, token2, actions[i], now, rng);
+    } catch (error) {
+      if (i === 0 || !(error instanceof GameRuleError)) throw error;
+      break;
+    }
+  }
+}
 function touch(room, token2, now, force = false) {
   const watcher = spectatorOf(room, token2);
   if (watcher) {
@@ -2276,8 +2288,9 @@ function createApi(store, deps) {
         case "intent": {
           const c = code(body.code);
           const t = token(body.token);
-          const action = body.action;
-          if (!action || typeof action !== "object" || typeof action.type !== "string") {
+          const raw = Array.isArray(body.actions) ? body.actions : [body.action];
+          const actions = raw.slice(0, NET.maxIntentBatch);
+          if (actions.length === 0 || !actions.every((a2) => a2 && typeof a2 === "object" && typeof a2.type === "string")) {
             throw new HttpError(400, "\xDD \u0111\u1ECBnh kh\xF4ng h\u1EE3p l\u1EC7.");
           }
           const since = Number(body.since ?? -1);
@@ -2286,7 +2299,7 @@ function createApi(store, deps) {
             body: await mutate(c, (room) => {
               touch(room, t, now(), true);
               tick(room, now(), rng);
-              intent(room, t, action, now(), rng);
+              intents(room, t, actions, now(), rng);
               return { changed: true, result: viewFor(room, t, since, now()) };
             })
           };

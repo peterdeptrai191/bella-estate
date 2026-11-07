@@ -4,7 +4,7 @@
  */
 import { GameRuleError } from '../game-core'
 import { NET, type ApiRequest, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
-import { createRoom, intent, isMember, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
+import { createRoom, intents, isMember, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
 import type { RoomStore } from './store'
 
 export interface ApiResult {
@@ -153,8 +153,10 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
         case 'intent': {
           const c = code(body.code)
           const t = token(body.token)
-          const action = body.action
-          if (!action || typeof action !== 'object' || typeof (action as { type?: unknown }).type !== 'string') {
+          // Một lần bấm = danh sách ý định áp theo thứ tự (vẫn nhận `action` lẻ của client cũ).
+          const raw = Array.isArray(body.actions) ? (body.actions as unknown[]) : [(body as { action?: unknown }).action]
+          const actions = raw.slice(0, NET.maxIntentBatch)
+          if (actions.length === 0 || !actions.every((a) => a && typeof a === 'object' && typeof (a as { type?: unknown }).type === 'string')) {
             throw new HttpError(400, 'Ý định không hợp lệ.')
           }
           const since = Number(body.since ?? -1)
@@ -163,7 +165,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
             body: await mutate(c, (room) => {
               touch(room, t, now(), true)
               tick(room, now(), rng)
-              intent(room, t, action as IntentAction, now(), rng)
+              intents(room, t, actions as IntentAction[], now(), rng)
               return { changed: true, result: viewFor(room, t, since, now()) }
             }),
           }
