@@ -7,7 +7,7 @@
  *   const { state: next, events } = applyAction(state, { type: 'ROLL_DICE', playerId: 'p1' })
  */
 export * from './types'
-export { createGame, MIN_PLAYERS, MAX_PLAYERS, type NewPlayer } from './game'
+export { createGame, MIN_PLAYERS, MAX_PLAYERS, normalizeMaxRounds, type GameOptions, type NewPlayer } from './game'
 export { applyAction } from './reducer'
 export { GameRuleError, currentPlayer } from './context'
 export { getLegalActions, getTimeoutAction, isLegal } from './legalActions'

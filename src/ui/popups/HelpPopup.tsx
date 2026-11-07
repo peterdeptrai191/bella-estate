@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CARDS, type CardId } from '../../config/cards'
 import { ECONOMY } from '../../config/economy'
 import { formatMoney } from '../../game-core'
+import { useGameStore } from '../../store/gameStore'
 import { useUiStore } from '../../store/uiStore'
 import { Modal } from '../kit'
 
@@ -45,6 +46,7 @@ function Item({ icon, title, children }: { icon: string; title: string; children
 
 export function HelpPopup() {
   const open = useUiStore((s) => s.helpOpen)
+  const maxRounds = useGameStore((s) => s.game?.maxRounds) || ECONOMY.maxRounds
   const [tab, setTab] = useState<Tab>('win')
   if (!open) return null
   const close = () => useUiStore.setState({ helpOpen: false })
@@ -79,7 +81,7 @@ export function HelpPopup() {
             <Item icon="🏆" title="Người sống sót cuối cùng">
               Mọi đối thủ khác phá sản.
             </Item>
-            <Item icon="⏱️" title={`Hết ${E.maxRounds} vòng`}>
+            <Item icon="⏱️" title={`Hết ${maxRounds} vòng`}>
               Ai có tổng tài sản (tiền + giá trị đất, nhà) cao nhất thắng; bằng nhau thì ai nhiều tiền mặt hơn.
             </Item>
           </ul>

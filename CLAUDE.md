@@ -100,6 +100,7 @@ online     →  game-core, config, net   (không import React/Three/store/ui/sce
 - Chạy hoàn toàn trên Vercel: Function `api/estate.js` + Upstash Redis + client polling. Không có tiến trình chạy liên tục: mỗi lần client hỏi server, `tick(room, now)` cho ván chạy tới hiện tại (bot, hết giờ, lấp bot).
 - Server-authoritative: client gửi ý định, server gán `playerId` theo khóa ghế, kiểm tra bằng `applyAction`, trả state (bỏ trạng thái RNG) + event. RNG crypto thay vào trước mỗi action.
 - `room.ts` là logic thuần trên JSON; `handler.ts` là API; `store.ts` là Redis/bộ nhớ; `vercel.ts` bundle thành `api/estate.js`. Sửa bất cứ file nào trong `src/online/` (hoặc game-core/config) thì chạy `npm run build:api` — có test bắt lỗi nếu bundle cũ. `npm run build` cũng tự bundle.
+- Phòng riêng: chủ phòng chọn số vòng (`GameState.maxRounds`); phòng đủ người / đã bắt đầu thì người vào bằng mã thành người xem (`room.spectators`, `lobby.spectating`).
 - `npm run dev` tự phục vụ `/api/estate` (lưu bộ nhớ). Chi tiết + deploy: `docs/MULTIPLAYER.md`. Các lựa chọn khi yêu cầu chưa rõ ghi ở `docs/RULES-DECISIONS.md` mục "Chơi online".
 
 ## Quy ước code

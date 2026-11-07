@@ -4,7 +4,7 @@
  */
 import { GameRuleError } from '../game-core'
 import { NET, type ApiRequest, type IntentAction, type JoinRequest, type JoinResponse, type RoomView } from '../net/protocol'
-import { createRoom, intent, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
+import { createRoom, intent, isMember, joinRoom, leaveRoom, randomCode, randomToken, requestStart, tick, touch, viewFor, type Rng, type Room } from './room'
 import type { RoomStore } from './store'
 
 export interface ApiResult {
@@ -69,11 +69,11 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
     throw new HttpError(409, 'Phòng đang bận, thử lại nhé.')
   }
 
-  async function createAndJoin(mode: 'private' | 'quick', capacity: number, join: JoinRequest): Promise<JoinResponse> {
+  async function createAndJoin(mode: 'private' | 'quick', capacity: number, join: JoinRequest, maxRounds?: number): Promise<JoinResponse> {
     for (let attempt = 0; attempt < 5; attempt++) {
       const c = randomCode(rng)
       const t = randomToken(rng)
-      const room = createRoom(c, mode, capacity, now())
+      const room = createRoom(c, mode, capacity, now(), maxRounds)
       joinRoom(room, join, t, now(), rng)
       if (await requireStore().write(roomKey(c), null, JSON.stringify(room), NET.roomTtlSec)) {
         return { code: c, token: t, view: viewFor(room, t, -1, now()) }
@@ -82,11 +82,11 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
     throw new HttpError(500, 'Không tạo được phòng, thử lại nhé.')
   }
 
-  async function joinExisting(c: string, join: JoinRequest): Promise<JoinResponse> {
+  async function joinExisting(c: string, join: JoinRequest, allowSpectate: boolean): Promise<JoinResponse> {
     const t = randomToken(rng)
     const view = await mutate(c, (room) => {
       tick(room, now(), rng)
-      joinRoom(room, join, t, now(), rng)
+      joinRoom(room, join, t, now(), rng, allowSpectate)
       return { changed: true, result: viewFor(room, t, -1, now()) }
     })
     return { code: c, token: t, view }
@@ -97,7 +97,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
     const pointer = await s.read(QUICK_KEY)
     if (pointer) {
       try {
-        const joined = await joinExisting(pointer, join)
+        const joined = await joinExisting(pointer, join, false)
         if (joined.view.lobby.started) await s.write(QUICK_KEY, pointer, '', 60)
         return joined
       } catch (error) {
@@ -112,7 +112,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
 
   async function poll(c: string, t: string, since: number): Promise<RoomView> {
     return mutate(c, (room) => {
-      if (!room.seats.some((s) => s.token === t)) throw new HttpError(403, 'Bạn không còn ở trong phòng này.')
+      if (!isMember(room, t)) throw new HttpError(403, 'Bạn không còn ở trong phòng này.')
       const changed = tick(room, now(), rng) || touch(room, t, now())
       return { changed, result: viewFor(room, t, since, now()) }
     })
@@ -129,11 +129,11 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
       const body = (rawBody && typeof rawBody === 'object' ? rawBody : {}) as Record<string, unknown> & Partial<ApiRequest>
       switch (body.op) {
         case 'create':
-          return { status: 200, body: await createAndJoin('private', Number(body.capacity), joinRequest(body)) }
+          return { status: 200, body: await createAndJoin('private', Number(body.capacity), joinRequest(body), Number(body.maxRounds)) }
         case 'quick':
           return { status: 200, body: await quick(joinRequest(body)) }
         case 'join':
-          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body)) }
+          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body), true) }
         case 'poll':
           return { status: 200, body: await poll(code(body.code), token(body.token), Number(body.since ?? -1)) }
         case 'start': {

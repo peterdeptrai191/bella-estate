@@ -25,8 +25,10 @@ var ECONOMY = {
   },
   /** Ô Thuế: nộp tỷ lệ này trên tổng tài sản (tiền mặt + giá trị đã đầu tư). */
   taxRate: 0.1,
-  /** Hết số vòng này thì người có tổng tài sản cao nhất thắng. */
+  /** Hết số vòng này thì người có tổng tài sản cao nhất thắng (mặc định). */
   maxRounds: 30,
+  /** Các lựa chọn số vòng khi tạo phòng (chủ phòng chọn). */
+  roundOptions: [30, 50, 70],
   /** Giới hạn thời gian mỗi lượt (UI/server dùng, game-core không đếm giờ). */
   turnTimeLimitSec: 20,
   /** Giá đất P theo nhóm màu. */
@@ -333,8 +335,9 @@ function advanceTurn(ctx) {
     }
   } while (s.players[i].bankrupt);
   if (wrapped) s.round++;
-  if (s.round > ECONOMY.maxRounds) {
-    s.round = ECONOMY.maxRounds;
+  const limit = s.maxRounds || ECONOMY.maxRounds;
+  if (s.round > limit) {
+    s.round = limit;
     finishGame(ctx, standings(s)[0].playerId, "ROUND_LIMIT");
     return;
   }
@@ -346,7 +349,11 @@ function advanceTurn(ctx) {
 // src/game-core/game.ts
 var MIN_PLAYERS = 2;
 var MAX_PLAYERS = 4;
-function createGame(players, seed) {
+function normalizeMaxRounds(value) {
+  const options = ECONOMY.roundOptions;
+  return typeof value === "number" && options.includes(value) ? value : ECONOMY.maxRounds;
+}
+function createGame(players, seed, options = {}) {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     throw new Error(`C\u1EA7n ${MIN_PLAYERS}\u2013${MAX_PLAYERS} ng\u01B0\u1EDDi ch\u01A1i`);
   }
@@ -367,6 +374,7 @@ function createGame(players, seed) {
     tiles: Array.from({ length: BOARD_SIZE }, () => ({ owner: null, level: 0 })),
     currentPlayerIndex: 0,
     round: 1,
+    maxRounds: normalizeMaxRounds(options.maxRounds),
     festivalTile: null,
     rngState: seedToRngState(seed),
     turn: freshTurn(),
@@ -1379,6 +1387,8 @@ var NET = {
   codeAlphabet: "ABCDEFGHJKMNPQRSTUVWXYZ23456789",
   minPlayers: 2,
   maxPlayers: 4,
+  /** Phòng đã đủ người chơi: người vào sau thành người xem, tối đa bấy nhiêu người. */
+  maxSpectators: 12,
   /** Ghép trận nhanh: chờ tối đa bấy nhiêu giây rồi thêm bot cho đủ ghế. */
   quickWaitSec: 30,
   /** Không nhận được tin của người chơi quá bấy nhiêu giây thì coi như mất kết nối (bot chơi thay). */
@@ -1614,7 +1624,7 @@ var VISUAL = {
    * Màu 4 người chơi: đỏ / xanh dương / xanh lá / tím, đậm và bão hoà để khác hẳn màu pastel của các nhóm đất
    * (không dùng vàng, cam, hồng vì trùng nhóm Châu Âu, Trung Đông, Nam Mỹ).
    */
-  playerColors: ["#e63946", "#2f6fed", "#12a150", "#9b45e4"],
+  playerColors: ["#e8000b", "#2f6fed", "#12a150", "#9b45e4"],
   /** Viền trắng quanh tấm màu chủ đất (tách tấm màu khỏi dải màu nhóm). */
   ownerRim: "#ffffff",
   material: {
@@ -1894,7 +1904,7 @@ function randomToken(rng) {
   for (let i = 0; i < 32; i++) token2 += "abcdefghijklmnopqrstuvwxyz0123456789"[rng.int(36)];
   return token2;
 }
-function createRoom(code2, mode, capacity, now) {
+function createRoom(code2, mode, capacity, now, maxRounds) {
   return {
     code: code2,
     mode,
@@ -1902,6 +1912,8 @@ function createRoom(code2, mode, capacity, now) {
     createdAt: now,
     quickDeadline: mode === "quick" ? now + NET.quickWaitSec * 1e3 : null,
     seats: [],
+    spectators: [],
+    maxRounds: normalizeMaxRounds(maxRounds),
     game: null,
     matchId: "",
     busyUntil: now,
@@ -1911,15 +1923,29 @@ function createRoom(code2, mode, capacity, now) {
   };
 }
 var seatOf = (room, token2) => room.seats.find((s) => s.token !== null && s.token === token2);
+var spectatorOf = (room, token2) => room.spectators?.find((s) => s.token === token2);
+function isMember(room, token2) {
+  return seatOf(room, token2) !== void 0 || spectatorOf(room, token2) !== void 0;
+}
 function connected(seat, now) {
   return seat.kind === "human" && now - seat.lastSeen <= NET.disconnectSec * 1e3;
 }
-function joinRoom(room, request, token2, now, rng) {
-  if (room.game) throw new GameRuleError("V\xE1n \u0111\xE3 b\u1EAFt \u0111\u1EA7u");
-  if (room.seats.length >= room.capacity) throw new GameRuleError("Ph\xF2ng \u0111\xE3 \u0111\u1EE7 ng\u01B0\u1EDDi");
-  const base = String(request.name ?? "").trim().slice(0, META.maxNameLength) || META.defaultName;
+function uniqueName(room, requested) {
+  const base = String(requested ?? "").trim().slice(0, META.maxNameLength) || META.defaultName;
+  const taken = /* @__PURE__ */ new Set([...room.seats.map((s) => s.name), ...(room.spectators ?? []).map((s) => s.name)]);
   let name = base;
-  for (let n = 2; room.seats.some((s) => s.name === name); n++) name = `${base} ${n}`;
+  for (let n = 2; taken.has(name); n++) name = `${base} ${n}`;
+  return name;
+}
+function joinRoom(room, request, token2, now, rng, allowSpectate = false) {
+  if (room.game || room.seats.length >= room.capacity) {
+    if (!allowSpectate) throw new GameRuleError(room.game ? "V\xE1n \u0111\xE3 b\u1EAFt \u0111\u1EA7u" : "Ph\xF2ng \u0111\xE3 \u0111\u1EE7 ng\u01B0\u1EDDi");
+    const spectators = room.spectators ??= [];
+    if (spectators.length >= NET.maxSpectators) throw new GameRuleError("Ph\xF2ng \u0111\xE3 \u0111\u1EE7 ng\u01B0\u1EDDi xem");
+    spectators.push({ token: token2, name: uniqueName(room, request.name), lastSeen: now });
+    return -1;
+  }
+  const name = uniqueName(room, request.name);
   let skin = skinById(request.skin).id;
   if (room.seats.some((s) => s.skin === skin)) skin = SEAT_SKINS.find((k) => !room.seats.some((s) => s.skin === k)) ?? skin;
   room.seats.push({ token: token2, name, skin, kind: "human", playerId: null, lastSeen: now });
@@ -1949,7 +1975,8 @@ function start(room, now, rng) {
   if (room.game) return;
   const game = createGame(
     room.seats.map((s) => ({ name: s.name, isBot: s.kind === "bot" })),
-    rng.int(2 ** 31 - 1)
+    rng.int(2 ** 31 - 1),
+    { maxRounds: room.maxRounds }
   );
   room.seats.forEach((s, i) => {
     s.playerId = game.players[i].id;
@@ -1961,6 +1988,10 @@ function start(room, now, rng) {
   room.deadline = null;
 }
 function leaveRoom(room, token2) {
+  if (spectatorOf(room, token2)) {
+    room.spectators = (room.spectators ?? []).filter((s) => s.token !== token2);
+    return;
+  }
   const seat = seatOf(room, token2);
   if (!seat) return;
   if (!room.game) {
@@ -1982,6 +2013,7 @@ function apply(room, action, now, rng) {
   if (room.log.length > NET.logSize) room.log.splice(0, room.log.length - NET.logSize);
 }
 function intent(room, token2, action, now, rng) {
+  if (spectatorOf(room, token2)) throw new GameRuleError("B\u1EA1n \u0111ang xem, kh\xF4ng th\u1EC3 ch\u01A1i");
   const seat = seatOf(room, token2);
   const game = room.game;
   if (!game || !seat?.playerId) throw new GameRuleError("V\xE1n ch\u01B0a b\u1EAFt \u0111\u1EA7u");
@@ -1991,6 +2023,12 @@ function intent(room, token2, action, now, rng) {
   apply(room, { ...action, playerId: seat.playerId }, now, rng);
 }
 function touch(room, token2, now) {
+  const watcher = spectatorOf(room, token2);
+  if (watcher) {
+    if (now - watcher.lastSeen < 3e3) return false;
+    watcher.lastSeen = now;
+    return true;
+  }
   const seat = seatOf(room, token2);
   if (!seat || seat.kind !== "human") return false;
   if (now - seat.lastSeen < 3e3) return false;
@@ -1999,6 +2037,10 @@ function touch(room, token2, now) {
 }
 function tick(room, now, rng) {
   let changed = false;
+  if (room.spectators?.some((w) => now - w.lastSeen > NET.reconnectSec * 1e3)) {
+    room.spectators = room.spectators.filter((w) => now - w.lastSeen <= NET.reconnectSec * 1e3);
+    changed = true;
+  }
   if (!room.game) {
     if (room.mode === "quick" && room.quickDeadline !== null && now >= room.quickDeadline && room.seats.length > 0) {
       fillBots(room);
@@ -2085,6 +2127,9 @@ function viewFor(room, token2, since, now) {
     capacity: room.capacity,
     seats: seatInfo(room, now),
     you,
+    spectating: spectatorOf(room, token2) !== void 0,
+    spectators: (room.spectators ?? []).map((w) => w.name),
+    maxRounds: room.maxRounds ?? normalizeMaxRounds(void 0),
     quickRemainingMs: room.quickDeadline === null ? null : Math.max(0, room.quickDeadline - now),
     started: room.game !== null
   };
@@ -2153,11 +2198,11 @@ function createApi(store, deps) {
     }
     throw new HttpError(409, "Ph\xF2ng \u0111ang b\u1EADn, th\u1EED l\u1EA1i nh\xE9.");
   }
-  async function createAndJoin(mode, capacity, join) {
+  async function createAndJoin(mode, capacity, join, maxRounds) {
     for (let attempt = 0; attempt < 5; attempt++) {
       const c = randomCode(rng);
       const t = randomToken(rng);
-      const room = createRoom(c, mode, capacity, now());
+      const room = createRoom(c, mode, capacity, now(), maxRounds);
       joinRoom(room, join, t, now(), rng);
       if (await requireStore().write(roomKey(c), null, JSON.stringify(room), NET.roomTtlSec)) {
         return { code: c, token: t, view: viewFor(room, t, -1, now()) };
@@ -2165,11 +2210,11 @@ function createApi(store, deps) {
     }
     throw new HttpError(500, "Kh\xF4ng t\u1EA1o \u0111\u01B0\u1EE3c ph\xF2ng, th\u1EED l\u1EA1i nh\xE9.");
   }
-  async function joinExisting(c, join) {
+  async function joinExisting(c, join, allowSpectate) {
     const t = randomToken(rng);
     const view = await mutate(c, (room) => {
       tick(room, now(), rng);
-      joinRoom(room, join, t, now(), rng);
+      joinRoom(room, join, t, now(), rng, allowSpectate);
       return { changed: true, result: viewFor(room, t, -1, now()) };
     });
     return { code: c, token: t, view };
@@ -2179,7 +2224,7 @@ function createApi(store, deps) {
     const pointer = await s.read(QUICK_KEY);
     if (pointer) {
       try {
-        const joined = await joinExisting(pointer, join);
+        const joined = await joinExisting(pointer, join, false);
         if (joined.view.lobby.started) await s.write(QUICK_KEY, pointer, "", 60);
         return joined;
       } catch (error) {
@@ -2192,7 +2237,7 @@ function createApi(store, deps) {
   }
   async function poll(c, t, since) {
     return mutate(c, (room) => {
-      if (!room.seats.some((s) => s.token === t)) throw new HttpError(403, "B\u1EA1n kh\xF4ng c\xF2n \u1EDF trong ph\xF2ng n\xE0y.");
+      if (!isMember(room, t)) throw new HttpError(403, "B\u1EA1n kh\xF4ng c\xF2n \u1EDF trong ph\xF2ng n\xE0y.");
       const changed = tick(room, now(), rng) || touch(room, t, now());
       return { changed, result: viewFor(room, t, since, now()) };
     });
@@ -2208,11 +2253,11 @@ function createApi(store, deps) {
       const body = rawBody && typeof rawBody === "object" ? rawBody : {};
       switch (body.op) {
         case "create":
-          return { status: 200, body: await createAndJoin("private", Number(body.capacity), joinRequest(body)) };
+          return { status: 200, body: await createAndJoin("private", Number(body.capacity), joinRequest(body), Number(body.maxRounds)) };
         case "quick":
           return { status: 200, body: await quick(joinRequest(body)) };
         case "join":
-          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body)) };
+          return { status: 200, body: await joinExisting(code(body.code), joinRequest(body), true) };
         case "poll":
           return { status: 200, body: await poll(code(body.code), token(body.token), Number(body.since ?? -1)) };
         case "start": {

@@ -79,6 +79,8 @@ export interface GameState {
   currentPlayerIndex: number
   /** Vòng hiện tại, bắt đầu từ 1. */
   round: number
+  /** Hết vòng này thì kết thúc theo tổng tài sản (chọn khi tạo ván, mặc định ECONOMY.maxRounds). */
+  maxRounds: number
   /** Thành phố đang tổ chức Lễ Hội. */
   festivalTile: number | null
   /** Trạng thái RNG (mulberry32). Cùng seed + cùng chuỗi action = cùng kết quả. */

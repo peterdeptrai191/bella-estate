@@ -191,6 +191,42 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     expect(humanPrompt(game, game.players[game.currentPlayerIndex].id)).not.toBeNull()
   })
 
+  it('số vòng chủ phòng chọn được áp vào ván; số lạ thì dùng mặc định', async () => {
+    const { post } = setup()
+    const a = await post<JoinResponse>({ op: 'create', name: 'An', skin: '', capacity: 2, maxRounds: 70 })
+    expect(a.view.lobby.maxRounds).toBe(70)
+    const b = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '' })
+    expect(b.view.game?.state.maxRounds).toBe(70)
+    const c = await post<JoinResponse>({ op: 'create', name: 'Chi', skin: '', capacity: 2, maxRounds: 999 })
+    expect(c.view.lobby.maxRounds).toBe(ECONOMY.maxRounds)
+  })
+
+  it('phòng đủ người: người vào sau thành người xem, thấy ván nhưng không chơi được, rời thì mất khỏi danh sách', async () => {
+    const { post, poll } = setup()
+    const a = await post<JoinResponse>({ op: 'create', name: 'An', skin: '', capacity: 2 })
+    await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '' })
+    const w = await post<JoinResponse>({ op: 'join', code: a.code, name: 'An', skin: '' })
+    expect(w.view.lobby.spectating).toBe(true)
+    expect(w.view.lobby.you).toBe(-1)
+    expect(w.view.game?.you).toBeNull()
+    expect(w.view.lobby.spectators).toEqual(['An 2'])
+    expect(w.view.game?.state.players).toHaveLength(2)
+    await expect(post({ op: 'intent', code: a.code, token: w.token, action: { type: 'ROLL_DICE' }, since: 0 })).rejects.toThrow('đang xem')
+    const seen = (await poll(a.code, w.token, -1)).body as RoomView
+    expect(seen.game?.full).toBe(true)
+    const host = (await poll(a.code, a.token, -1)).body as RoomView
+    expect(host.lobby.spectators).toEqual(['An 2'])
+    await post({ op: 'leave', code: a.code, token: w.token })
+    expect((await poll(a.code, w.token, -1)).status).toBe(403)
+  })
+
+  it('ghép nhanh không đưa người vào xem (bàn đầy thì mở bàn mới)', () => {
+    const rng = testRng()
+    const room = createRoom('ABC234', 'quick', 4, 0)
+    for (let i = 0; i < 4; i++) joinRoom(room, { name: `N${i}`, skin: '' }, TOKENS[i], 0, rng)
+    expect(() => joinRoom(room, { name: 'X', skin: '' }, 'e'.repeat(32), 0, rng)).toThrow()
+  })
+
   it('kiểm tra sống trả về loại kho', async () => {
     const { api } = setup()
     const r = await api('GET', new URLSearchParams({ op: 'health' }), null)

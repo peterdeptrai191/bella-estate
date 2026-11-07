@@ -176,7 +176,7 @@ export const VISUAL = {
    * Màu 4 người chơi: đỏ / xanh dương / xanh lá / tím, đậm và bão hoà để khác hẳn màu pastel của các nhóm đất
    * (không dùng vàng, cam, hồng vì trùng nhóm Châu Âu, Trung Đông, Nam Mỹ).
    */
-  playerColors: ['#e63946', '#2f6fed', '#12a150', '#9b45e4'],
+  playerColors: ['#e8000b', '#2f6fed', '#12a150', '#9b45e4'],
   /** Viền trắng quanh tấm màu chủ đất (tách tấm màu khỏi dải màu nhóm). */
   ownerRim: '#ffffff',
 

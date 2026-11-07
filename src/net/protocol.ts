@@ -15,6 +15,8 @@ export const NET = {
   codeAlphabet: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',
   minPlayers: 2,
   maxPlayers: 4,
+  /** Phòng đã đủ người chơi: người vào sau thành người xem, tối đa bấy nhiêu người. */
+  maxSpectators: 12,
   /** Ghép trận nhanh: chờ tối đa bấy nhiêu giây rồi thêm bot cho đủ ghế. */
   quickWaitSec: 30,
   /** Không nhận được tin của người chơi quá bấy nhiêu giây thì coi như mất kết nối (bot chơi thay). */
@@ -50,8 +52,14 @@ export interface LobbyInfo {
   mode: 'private' | 'quick'
   capacity: number
   seats: SeatInfo[]
-  /** Chỉ số ghế của chính người hỏi. */
+  /** Chỉ số ghế của chính người hỏi (-1 = người xem). */
   you: number
+  /** Người hỏi đang là người xem (chỉ xem, không chơi). */
+  spectating: boolean
+  /** Tên những người đang xem. */
+  spectators: string[]
+  /** Số vòng tối đa của ván. */
+  maxRounds: number
   /** Ghép nhanh: còn bao nhiêu ms trước khi thêm bot. */
   quickRemainingMs: number | null
   started: boolean
@@ -86,7 +94,7 @@ export interface JoinRequest {
 }
 
 export type ApiRequest =
-  | ({ op: 'create'; capacity: number } & JoinRequest)
+  | ({ op: 'create'; capacity: number; maxRounds?: number } & JoinRequest)
   | ({ op: 'join'; code: string } & JoinRequest)
   | ({ op: 'quick' } & JoinRequest)
   | { op: 'start'; code: string; token: string }

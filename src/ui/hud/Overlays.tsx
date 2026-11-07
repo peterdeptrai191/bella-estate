@@ -8,6 +8,7 @@ import { SEAT_SKINS, skinById } from '../../config/skins'
 import { describeEvent, standings, type WinReason } from '../../game-core'
 import { useAnimationStore } from '../../store/animationStore'
 import { useGameStore } from '../../store/gameStore'
+import { useOnlineStore } from '../../store/onlineStore'
 import { useProfileStore } from '../../store/profileStore'
 import { useUiStore } from '../../store/uiStore'
 import { useVisual } from '../../store/visualStore'
@@ -48,6 +49,8 @@ export function TopBar() {
   const [confirmExit, setConfirmExit] = useState(false)
   const zoomed = useUiStore((s) => s.viewZoomed)
   const mode = useGameStore((s) => s.mode)
+  const spectating = useOnlineStore((s) => s.lobby?.spectating ?? false)
+  const watchers = useOnlineStore((s) => s.lobby?.spectators.length ?? 0)
   if (!game) return null
   const caption = head ? describeEvent(head.event, game) : null
   return (
@@ -61,7 +64,7 @@ export function TopBar() {
           Thoát
         </button>
         <span className="rounded-full bg-ink/80 px-[1rem] py-[0.15rem] text-[1.15rem] font-extrabold whitespace-nowrap text-white shadow-md tabular-nums">
-          Vòng {Math.min(game.round, ECONOMY.maxRounds)}/{ECONOMY.maxRounds}
+          Vòng {Math.min(game.round, game.maxRounds || ECONOMY.maxRounds)}/{game.maxRounds || ECONOMY.maxRounds}
         </span>
         <button
           aria-label={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
@@ -75,6 +78,14 @@ export function TopBar() {
           {muted ? '🔇' : '🔊'}
         </button>
         <FullscreenButton />
+        {mode === 'online' && (spectating || watchers > 0) && (
+          <span
+            title={spectating ? 'Bạn đang xem ván này (không thể chơi)' : `${watchers} người đang xem`}
+            className={`rounded-full px-[0.8rem] py-[0.15rem] text-[1rem] font-extrabold whitespace-nowrap text-white shadow-md ${spectating ? 'bg-violet-500' : 'bg-ink/60'}`}
+          >
+            👁 {spectating ? 'Đang xem' : watchers}
+          </span>
+        )}
         <button
           aria-label="Luật chơi"
           title="Luật chơi, cách thắng"

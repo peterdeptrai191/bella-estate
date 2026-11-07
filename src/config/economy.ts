@@ -29,8 +29,10 @@ export const ECONOMY = {
 
   /** Ô Thuế: nộp tỷ lệ này trên tổng tài sản (tiền mặt + giá trị đã đầu tư). */
   taxRate: 0.1,
-  /** Hết số vòng này thì người có tổng tài sản cao nhất thắng. */
+  /** Hết số vòng này thì người có tổng tài sản cao nhất thắng (mặc định). */
   maxRounds: 30,
+  /** Các lựa chọn số vòng khi tạo phòng (chủ phòng chọn). */
+  roundOptions: [30, 50, 70],
   /** Giới hạn thời gian mỗi lượt (UI/server dùng, game-core không đếm giờ). */
   turnTimeLimitSec: 20,
 

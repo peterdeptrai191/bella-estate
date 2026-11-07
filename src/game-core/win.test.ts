@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ECONOMY } from '../config/economy'
 import { groupTiles, RESORT_INDICES, sidePurchasableTiles } from './board'
 import { GameRuleError } from './context'
+import { createGame, normalizeMaxRounds } from './game'
 import { act, arrive, eventsOf, newGame, own, patch, setMoney } from './testHelpers'
 
 describe('5 điều kiện thắng (GDD mục 5)', () => {
@@ -82,5 +83,25 @@ describe('5 điều kiện thắng (GDD mục 5)', () => {
     const s = own(newGame(), 'p1', RESORT_INDICES.slice(0, 3))
     const { state } = act(arrive(s, RESORT_INDICES[3]).state, { type: 'BUY' })
     expect(() => act(state, { type: 'END_TURN' })).toThrow(GameRuleError)
+  })
+
+  it('số vòng chọn khi tạo ván: hết vòng 50 thì kết thúc', () => {
+    const base = createGame([{ name: 'A' }, { name: 'B' }], 1, { maxRounds: 50 })
+    expect(base.maxRounds).toBe(50)
+    const s = patch(base, (x) => {
+      x.round = 50
+      x.currentPlayerIndex = 1
+      x.turn.step = 'ACT'
+    })
+    const { state } = act(s, { type: 'END_TURN' })
+    expect(state.winReason).toBe('ROUND_LIMIT')
+    expect(state.round).toBe(50)
+  })
+
+  it('số vòng không hợp lệ thì dùng mặc định', () => {
+    expect(normalizeMaxRounds(7)).toBe(ECONOMY.maxRounds)
+    expect(normalizeMaxRounds('70')).toBe(ECONOMY.maxRounds)
+    expect(normalizeMaxRounds(70)).toBe(70)
+    expect(createGame([{ name: 'A' }, { name: 'B' }], 1).maxRounds).toBe(ECONOMY.maxRounds)
   })
 })

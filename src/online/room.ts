@@ -17,6 +17,7 @@ import {
   autoAction,
   createGame,
   currentPlayer,
+  normalizeMaxRounds,
   getTimeoutAction,
   GameRuleError,
   type GameAction,
@@ -38,6 +39,13 @@ export interface RoomSeat {
   lastSeen: number
 }
 
+/** Người xem: vào khi phòng đã đủ người / ván đã bắt đầu. Chỉ xem, không gửi được ý định. */
+export interface RoomSpectator {
+  token: string
+  name: string
+  lastSeen: number
+}
+
 export interface EventBatch {
   seq: number
   events: GameEvent[]
@@ -51,6 +59,10 @@ export interface Room {
   /** Ghép nhanh: lúc này mà chưa đủ người thì thêm bot. */
   quickDeadline: number | null
   seats: RoomSeat[]
+  /** Người xem (có thể thiếu ở phòng tạo trước khi có tính năng này). */
+  spectators?: RoomSpectator[]
+  /** Số vòng tối đa của ván (chủ phòng chọn khi tạo). */
+  maxRounds?: number
   game: GameState | null
   matchId: string
   /** Client còn đang phát animation tới thời điểm này. */
@@ -79,7 +91,7 @@ export function randomToken(rng: Rng): string {
   return token
 }
 
-export function createRoom(code: string, mode: 'private' | 'quick', capacity: number, now: number): Room {
+export function createRoom(code: string, mode: 'private' | 'quick', capacity: number, now: number, maxRounds?: number): Room {
   return {
     code,
     mode,
@@ -87,6 +99,8 @@ export function createRoom(code: string, mode: 'private' | 'quick', capacity: nu
     createdAt: now,
     quickDeadline: mode === 'quick' ? now + NET.quickWaitSec * 1000 : null,
     seats: [],
+    spectators: [],
+    maxRounds: normalizeMaxRounds(maxRounds),
     game: null,
     matchId: '',
     busyUntil: now,
@@ -97,6 +111,12 @@ export function createRoom(code: string, mode: 'private' | 'quick', capacity: nu
 }
 
 const seatOf = (room: Room, token: string) => room.seats.find((s) => s.token !== null && s.token === token)
+const spectatorOf = (room: Room, token: string) => room.spectators?.find((s) => s.token === token)
+
+/** Khóa này có ở trong phòng không (người chơi hoặc người xem). */
+export function isMember(room: Room, token: string): boolean {
+  return seatOf(room, token) !== undefined || spectatorOf(room, token) !== undefined
+}
 
 function connected(seat: RoomSeat, now: number): boolean {
   return seat.kind === 'human' && now - seat.lastSeen <= NET.disconnectSec * 1000
@@ -104,14 +124,29 @@ function connected(seat: RoomSeat, now: number): boolean {
 
 // ---------- Sảnh chờ ----------
 
-/** Thêm người chơi vào phòng. Trả về chỉ số ghế. */
-export function joinRoom(room: Room, request: JoinRequest, token: string, now: number, rng: Rng): number {
-  if (room.game) throw new GameRuleError('Ván đã bắt đầu')
-  if (room.seats.length >= room.capacity) throw new GameRuleError('Phòng đã đủ người')
-  // Trùng tên/skin với người đã vào: thêm số vào tên, đổi sang skin mặc định chưa ai dùng (để phân biệt quân).
-  const base = String(request.name ?? '').trim().slice(0, META.maxNameLength) || META.defaultName
+/** Tên không trùng với ai trong phòng (thêm số phía sau). */
+function uniqueName(room: Room, requested: unknown): string {
+  const base = String(requested ?? '').trim().slice(0, META.maxNameLength) || META.defaultName
+  const taken = new Set([...room.seats.map((s) => s.name), ...(room.spectators ?? []).map((s) => s.name)])
   let name = base
-  for (let n = 2; room.seats.some((s) => s.name === name); n++) name = `${base} ${n}`
+  for (let n = 2; taken.has(name); n++) name = `${base} ${n}`
+  return name
+}
+
+/**
+ * Thêm người vào phòng. Còn ghế và ván chưa bắt đầu → người chơi (trả về chỉ số ghế).
+ * Phòng đã đủ người hoặc đã bắt đầu → người xem nếu `allowSpectate` (trả về -1), không thì báo lỗi.
+ */
+export function joinRoom(room: Room, request: JoinRequest, token: string, now: number, rng: Rng, allowSpectate = false): number {
+  if (room.game || room.seats.length >= room.capacity) {
+    if (!allowSpectate) throw new GameRuleError(room.game ? 'Ván đã bắt đầu' : 'Phòng đã đủ người')
+    const spectators = (room.spectators ??= [])
+    if (spectators.length >= NET.maxSpectators) throw new GameRuleError('Phòng đã đủ người xem')
+    spectators.push({ token, name: uniqueName(room, request.name), lastSeen: now })
+    return -1
+  }
+  // Trùng tên/skin với người đã vào: thêm số vào tên, đổi sang skin mặc định chưa ai dùng (để phân biệt quân).
+  const name = uniqueName(room, request.name)
   let skin = skinById(request.skin).id
   if (room.seats.some((s) => s.skin === skin)) skin = SEAT_SKINS.find((k) => !room.seats.some((s) => s.skin === k)) ?? skin
   room.seats.push({ token, name, skin, kind: 'human', playerId: null, lastSeen: now })
@@ -146,6 +181,7 @@ function start(room: Room, now: number, rng: Rng): void {
   const game = createGame(
     room.seats.map((s) => ({ name: s.name, isBot: s.kind === 'bot' })),
     rng.int(2 ** 31 - 1),
+    { maxRounds: room.maxRounds },
   )
   room.seats.forEach((s, i) => {
     s.playerId = game.players[i].id
@@ -159,6 +195,10 @@ function start(room: Room, now: number, rng: Rng): void {
 
 /** Người chơi tự rời phòng. Trước khi bắt đầu: bỏ ghế. Trong ván: ghế giao hẳn cho bot. */
 export function leaveRoom(room: Room, token: string): void {
+  if (spectatorOf(room, token)) {
+    room.spectators = (room.spectators ?? []).filter((s) => s.token !== token)
+    return
+  }
   const seat = seatOf(room, token)
   if (!seat) return
   if (!room.game) {
@@ -186,6 +226,7 @@ function apply(room: Room, action: GameAction, now: number, rng: Rng): void {
 
 /** Ý định của người chơi (đã được xác thực bằng khóa ghế). */
 export function intent(room: Room, token: string, action: IntentAction, now: number, rng: Rng): void {
+  if (spectatorOf(room, token)) throw new GameRuleError('Bạn đang xem, không thể chơi')
   const seat = seatOf(room, token)
   const game = room.game
   if (!game || !seat?.playerId) throw new GameRuleError('Ván chưa bắt đầu')
@@ -198,6 +239,12 @@ export function intent(room: Room, token: string, action: IntentAction, now: num
 
 /** Cập nhật "còn ở đây" cho người chơi. Trả về true nếu có thay đổi đáng lưu. */
 export function touch(room: Room, token: string, now: number): boolean {
+  const watcher = spectatorOf(room, token)
+  if (watcher) {
+    if (now - watcher.lastSeen < 3000) return false
+    watcher.lastSeen = now
+    return true
+  }
   const seat = seatOf(room, token)
   if (!seat || seat.kind !== 'human') return false
   // Không ghi mỗi lần hỏi (đỡ tốn lệnh Redis): chỉ khi đã lâu, hoặc vừa quay lại sau mất kết nối.
@@ -212,6 +259,11 @@ export function touch(room: Room, token: string, now: number): boolean {
  */
 export function tick(room: Room, now: number, rng: Rng): boolean {
   let changed = false
+  // Người xem lâu không hỏi server: bỏ khỏi danh sách.
+  if (room.spectators?.some((w) => now - w.lastSeen > NET.reconnectSec * 1000)) {
+    room.spectators = room.spectators.filter((w) => now - w.lastSeen <= NET.reconnectSec * 1000)
+    changed = true
+  }
   if (!room.game) {
     if (room.mode === 'quick' && room.quickDeadline !== null && now >= room.quickDeadline && room.seats.length > 0) {
       fillBots(room)
@@ -312,6 +364,9 @@ export function viewFor(room: Room, token: string, since: number, now: number): 
     capacity: room.capacity,
     seats: seatInfo(room, now),
     you,
+    spectating: spectatorOf(room, token) !== undefined,
+    spectators: (room.spectators ?? []).map((w) => w.name),
+    maxRounds: room.maxRounds ?? normalizeMaxRounds(undefined),
     quickRemainingMs: room.quickDeadline === null ? null : Math.max(0, room.quickDeadline - now),
     started: room.game !== null,
   }

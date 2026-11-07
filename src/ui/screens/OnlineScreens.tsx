@@ -1,6 +1,7 @@
 /** Chơi cùng bạn: tạo phòng (2–4 người), vào phòng bằng mã, ghép trận nhanh; sảnh chờ. */
 import { useEffect, useState } from 'react'
 import { NET } from '../../net/protocol'
+import { ECONOMY } from '../../config/economy'
 import { skinById } from '../../config/skins'
 import { createRoom, joinRoom, leaveRoom, quickMatch, startNow } from '../../store/net'
 import { useOnlineStore } from '../../store/onlineStore'
@@ -29,6 +30,7 @@ export function FriendsScreen() {
   const setScreen = useUiStore((s) => s.setScreen)
   const { status, error, pendingLabel } = useOnlineStore()
   const [capacity, setCapacity] = useState(4)
+  const [maxRounds, setMaxRounds] = useState<number>(ECONOMY.maxRounds)
   const [code, setCode] = useState('')
 
   // Vào phòng thành công → sang sảnh chờ.
@@ -46,6 +48,7 @@ export function FriendsScreen() {
     <ScreenFrame title="Chơi cùng bạn" width="w-[48rem]">
       <div className="flex gap-[0.9rem] max-[640px]:flex-col">
         <Section title="Tạo phòng">
+          <div className="text-[0.85rem] font-bold text-stone-400 uppercase">Số người chơi</div>
           <div className="flex gap-[0.4rem]">
             {[2, 3, 4].map((n) => (
               <button
@@ -59,10 +62,28 @@ export function FriendsScreen() {
               </button>
             ))}
           </div>
-          <button className="btn-3d btn-green px-[1.4rem] py-[0.4rem] text-[1.15rem]" disabled={busy} onClick={go(() => createRoom({ ...opts, capacity }))}>
+          <div className="text-[0.85rem] font-bold text-stone-400 uppercase">Số vòng</div>
+          <div className="flex flex-wrap justify-center gap-[0.4rem]">
+            {ECONOMY.roundOptions.map((n) => (
+              <button
+                key={n}
+                onClick={() => setMaxRounds(n)}
+                className={`rounded-lg border-[0.15rem] px-[0.6rem] py-[0.2rem] text-[1.05rem] font-extrabold ${
+                  maxRounds === n ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-stone-200 text-stone-500'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <button
+            className="btn-3d btn-green px-[1.4rem] py-[0.4rem] text-[1.15rem]"
+            disabled={busy}
+            onClick={go(() => createRoom({ ...opts, capacity, maxRounds }))}
+          >
             Tạo phòng
           </button>
-          <p className="text-center text-[0.9rem] text-stone-400">Gửi mã phòng cho bạn bè để cùng chơi.</p>
+          <p className="text-center text-[0.9rem] text-stone-400">Gửi mã phòng cho bạn bè. Phòng đủ người thì người vào sau được xem.</p>
         </Section>
         <Section title="Vào phòng">
           <input
@@ -79,6 +100,7 @@ export function FriendsScreen() {
           >
             Vào phòng
           </button>
+          <p className="text-center text-[0.9rem] text-stone-400">Phòng đã đủ {NET.maxPlayers} người hoặc đang chơi: bạn vào xem.</p>
         </Section>
         <Section title="Ghép trận nhanh">
           <p className="text-center text-[0.95rem] text-stone-500">
@@ -142,6 +164,9 @@ export function LobbyScreen() {
           </div>
         </div>
       )}
+      <p className="mb-[0.6rem] text-center text-[1rem] font-bold text-stone-500">
+        {lobby.maxRounds} vòng{lobby.spectating ? ' · Bạn đang xem (không thể chơi)' : ''}
+      </p>
       {remaining !== null && (
         <p className="mb-[0.6rem] text-center text-[1.1rem] font-bold text-sky-600">
           Đang chờ người chơi… thêm bot sau <span className="tabular-nums">{remaining}</span> giây
@@ -169,7 +194,17 @@ export function LobbyScreen() {
           </div>
         ))}
       </div>
-      {lobby.mode === 'private' && (
+      {lobby.spectators.length > 0 && (
+        <div className="mt-[0.8rem] flex flex-wrap items-center justify-center gap-[0.4rem]">
+          <span className="text-[0.95rem] font-bold text-stone-500">👁 Người xem:</span>
+          {lobby.spectators.map((name) => (
+            <span key={name} className="rounded-full bg-violet-100 px-[0.6rem] text-[0.95rem] font-bold text-violet-700">
+              {name}
+            </span>
+          ))}
+        </div>
+      )}
+      {lobby.mode === 'private' && !lobby.spectating && (
         <div className="mt-[1rem] flex flex-col items-center gap-[0.3rem]">
           {you?.isHost ? (
             <button className="btn-3d btn-green px-[2.4rem] py-[0.5rem] text-[1.3rem]" disabled={humans < NET.minPlayers} onClick={startNow}>

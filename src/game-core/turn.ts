@@ -41,8 +41,10 @@ export function advanceTurn(ctx: Ctx): void {
   } while (s.players[i].bankrupt)
 
   if (wrapped) s.round++
-  if (s.round > ECONOMY.maxRounds) {
-    s.round = ECONOMY.maxRounds
+  // Ván cũ (lưu trước khi có tuỳ chọn số vòng) không có maxRounds: dùng mặc định.
+  const limit = s.maxRounds || ECONOMY.maxRounds
+  if (s.round > limit) {
+    s.round = limit
     finishGame(ctx, standings(s)[0].playerId, 'ROUND_LIMIT')
     return
   }

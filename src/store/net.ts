@@ -174,7 +174,7 @@ function sendIntent(action: IntentAction) {
 }
 
 export const quickMatch = (opts: JoinRequest) => run('Đang tìm trận…', { op: 'quick', ...opts })
-export const createRoom = (opts: JoinRequest & { capacity: number }) => run('Đang tạo phòng…', { op: 'create', ...opts })
+export const createRoom = (opts: JoinRequest & { capacity: number; maxRounds: number }) => run('Đang tạo phòng…', { op: 'create', ...opts })
 export const joinRoom = (code: string, opts: JoinRequest) => run('Đang vào phòng…', { op: 'join', code: code.trim().toUpperCase(), ...opts })
 
 export function startNow() {
