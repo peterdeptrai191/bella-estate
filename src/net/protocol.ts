@@ -78,6 +78,8 @@ export interface GameSnapshot {
   state: GameState
   /** Số thứ tự lô event cuối cùng đã gồm trong `state`. Lần hỏi sau gửi lại số này. */
   seq: number
+  /** Số lô event client đã có khi server tính câu trả lời này (`events` = các lô sau số này; -1 khi full). */
+  from: number
   full: boolean
   events: GameEvent[]
 }

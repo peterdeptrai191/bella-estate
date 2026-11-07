@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyAction, createGame, type GameState } from '../game-core'
 import { createRandomPlayer, nextRandomAction } from '../game-core/randomPlayer'
-import { applyEventToView, viewFromGame, type BoardView } from './boardView'
+import { applyEventToView, viewFromGame, viewMatchesGame, type BoardView } from './boardView'
 
 /** Phần view phải khớp tuyệt đối với game-core (bỏ xúc xắc vì lượt mới xóa dice trong game-core). */
 function comparable(view: BoardView) {
@@ -24,7 +24,18 @@ describe('Phát lại event lên view', () => {
       state = result.state
       for (const event of result.events) view = applyEventToView(view, event)
       expect(comparable(view)).toEqual(comparable(viewFromGame(state)))
+      expect(viewMatchesGame(view, state)).toBe(true)
     }
     expect(state.phase).toBe('finished')
+  })
+})
+
+describe('Đối chiếu view với state', () => {
+  it('phát trùng một event trả tiền thì phát hiện lệch', () => {
+    const state = createGame([{ name: 'A' }, { name: 'B' }], 3)
+    const view = viewFromGame(state)
+    const paid = applyEventToView(view, { type: 'MONEY_PAID', from: 'p1', to: null, amount: 100, reason: 'TAX' })
+    expect(viewMatchesGame(view, state)).toBe(true)
+    expect(viewMatchesGame(paid, state)).toBe(false)
   })
 })

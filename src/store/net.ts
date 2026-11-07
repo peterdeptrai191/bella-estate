@@ -92,6 +92,13 @@ function accept(view: RoomView) {
     useOnlineStore.getState().set({ status: 'playing', error: null })
     useUiStore.getState().setScreen('game')
   } else if (game.seq !== since) {
+    if (game.from !== since) {
+      // Câu trả lời tính từ một mốc cũ (vd. lần hỏi định kỳ và câu trả lời của nút bấm về cùng lúc):
+      // áp vào sẽ phát lại event đã có (trừ tiền hai lần…). Bỏ qua; mới hơn thì hỏi lại ngay từ mốc hiện tại.
+      store.updateSeats(view.lobby.seats)
+      if (game.seq > since) void pollOnce()
+      return
+    }
     store.applyRemote(game.state, game.events)
   }
   store.updateSeats(view.lobby.seats)

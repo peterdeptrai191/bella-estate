@@ -139,3 +139,17 @@ export function applyEventToView(view: BoardView, event: GameEvent): BoardView {
       return view
   }
 }
+
+/**
+ * View đã phát hết event có khớp state game-core không (tiền, vị trí, phá sản, chủ đất, số nhà, Lễ Hội).
+ * Dùng để tự sửa nếu lỡ lệch (vd. mạng chập chờn khi chơi online).
+ */
+export function viewMatchesGame(view: BoardView, state: GameState): boolean {
+  const truth = viewFromGame(state)
+  if (view.festivalTile !== truth.festivalTile || view.players.length !== truth.players.length) return false
+  const playersOk = view.players.every((p, i) => {
+    const t = truth.players[i]
+    return p.id === t.id && p.money === t.money && p.position === t.position && p.bankrupt === t.bankrupt
+  })
+  return playersOk && view.tiles.every((t, i) => t.owner === truth.tiles[i].owner && t.level === truth.tiles[i].level)
+}

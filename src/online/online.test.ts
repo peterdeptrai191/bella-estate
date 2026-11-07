@@ -122,6 +122,7 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     await post({ op: 'intent', code: a.code, token: a.token, action: { type: 'ROLL_DICE' }, since: seq })
     const next = (await poll(a.code, b.token, seq)).body as RoomView
     expect(next.game?.full).toBe(false)
+    expect(next.game?.from).toBe(seq)
     expect(next.game?.events.map((e) => e.type)).toContain('DICE_ROLLED')
   })
 

@@ -381,6 +381,7 @@ export function viewFor(room: Room, token: string, since: number, now: number): 
       you: you >= 0 ? room.seats[you].playerId : null,
       state: sanitize(room.game),
       seq: room.seq,
+      from: full ? -1 : since,
       full,
       events,
     },

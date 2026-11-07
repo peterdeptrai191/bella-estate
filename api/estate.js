@@ -2144,6 +2144,7 @@ function viewFor(room, token2, since, now) {
       you: you >= 0 ? room.seats[you].playerId : null,
       state: sanitize(room.game),
       seq: room.seq,
+      from: full ? -1 : since,
       full,
       events
     },

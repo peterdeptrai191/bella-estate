@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { useAnimationStore } from '../../store/animationStore'
+import { viewMatchesGame } from '../../store/boardView'
+import { useGameStore } from '../../store/gameStore'
 import { useVisualStore } from '../../store/visualStore'
 import { playEvent } from './eventPlayer'
 
@@ -31,6 +33,13 @@ export function EventPlayer() {
         }
       } finally {
         running = false
+      }
+      // Phát hết hàng đợi: đối chiếu với state thật; lệch thì dựng lại view (không để tiền/nhà hiển thị sai).
+      const anim = useAnimationStore.getState()
+      const game = useGameStore.getState().game
+      if (!disposed && anim.queue.length === 0 && anim.view && game && !viewMatchesGame(anim.view, game)) {
+        console.warn('[event-player] view lệch state, dựng lại')
+        anim.reset(game)
       }
     }
     void pump()
