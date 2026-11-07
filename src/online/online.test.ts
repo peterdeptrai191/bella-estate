@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ECONOMY } from '../config/economy'
-import { humanPrompt } from '../game-core'
+import { getTimeoutAction, humanPrompt } from '../game-core'
 import { NET, type JoinResponse, type RoomView } from '../net/protocol'
 import { createApi } from './handler'
 import { createRoom, joinRoom, randomCode, requestStart, tick, viewFor, type Rng } from './room'
@@ -225,6 +225,34 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     const room = createRoom('ABC234', 'quick', 4, 0)
     for (let i = 0; i < 4; i++) joinRoom(room, { name: `N${i}`, skin: '' }, TOKENS[i], 0, rng)
     expect(() => joinRoom(room, { name: 'X', skin: '' }, 'e'.repeat(32), 0, rng)).toThrow()
+  })
+
+  it('người đang chơi hỏi server đều đặn thì luôn là người (không bị bot chơi thay) dù bot liên tục đi', async () => {
+    const { post, poll, advance } = setup()
+    const me = await post<JoinResponse>({ op: 'quick', name: 'An', skin: '' })
+    advance((NET.quickWaitSec + 1) * 1000)
+    let since = -1
+    let myTurns = 0
+    for (let i = 0; i < 150; i++) {
+      advance(NET.pollMs)
+      const view = (await poll(me.code, me.token, since)).body as RoomView
+      expect(view.lobby.seats[0]).toMatchObject({ kind: 'human', connected: true })
+      const game = view.game
+      if (!game) continue
+      since = game.seq
+      const prompt = humanPrompt(game.state, game.you)
+      if (prompt) {
+        // Người chơi quyết định (ở đây chọn phương án hết giờ) — server phải nhận, không báo "chưa tới lượt".
+        myTurns++
+        const action = getTimeoutAction(game.state)
+        if (action) {
+          const { playerId: _p, ...intentAction } = action
+          await post({ op: 'intent', code: me.code, token: me.token, action: intentAction, since })
+        }
+      }
+      if (game.state.phase !== 'playing') break
+    }
+    expect(myTurns).toBeGreaterThan(2)
   })
 
   it('kiểm tra sống trả về loại kho', async () => {

@@ -2022,7 +2022,7 @@ function intent(room, token2, action, now, rng) {
   if (currentPlayer(game).id !== seat.playerId) throw new GameRuleError("Ch\u01B0a t\u1EDBi l\u01B0\u1EE3t c\u1EE7a b\u1EA1n");
   apply(room, { ...action, playerId: seat.playerId }, now, rng);
 }
-function touch(room, token2, now) {
+function touch(room, token2, now, force = false) {
   const watcher = spectatorOf(room, token2);
   if (watcher) {
     if (now - watcher.lastSeen < 3e3) return false;
@@ -2031,7 +2031,7 @@ function touch(room, token2, now) {
   }
   const seat = seatOf(room, token2);
   if (!seat || seat.kind !== "human") return false;
-  if (now - seat.lastSeen < 3e3) return false;
+  if (!force && now - seat.lastSeen < 3e3) return false;
   seat.lastSeen = now;
   return true;
 }
@@ -2238,7 +2238,8 @@ function createApi(store, deps) {
   async function poll(c, t, since) {
     return mutate(c, (room) => {
       if (!isMember(room, t)) throw new HttpError(403, "B\u1EA1n kh\xF4ng c\xF2n \u1EDF trong ph\xF2ng n\xE0y.");
-      const changed = tick(room, now(), rng) || touch(room, t, now());
+      const touched = touch(room, t, now());
+      const changed = tick(room, now(), rng) || touched;
       return { changed, result: viewFor(room, t, since, now()) };
     });
   }
@@ -2282,6 +2283,7 @@ function createApi(store, deps) {
           return {
             status: 200,
             body: await mutate(c, (room) => {
+              touch(room, t, now(), true);
               tick(room, now(), rng);
               intent(room, t, action, now(), rng);
               return { changed: true, result: viewFor(room, t, since, now()) };

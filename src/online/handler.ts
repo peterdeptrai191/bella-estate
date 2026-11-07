@@ -113,7 +113,10 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
   async function poll(c: string, t: string, since: number): Promise<RoomView> {
     return mutate(c, (room) => {
       if (!isMember(room, t)) throw new HttpError(403, 'Bạn không còn ở trong phòng này.')
-      const changed = tick(room, now(), rng) || touch(room, t, now())
+      // Ghi nhận "còn ở đây" TRƯỚC khi cho ván chạy (và không bị bỏ qua khi tick có thay đổi),
+      // nếu không người đang chơi bị coi là mất kết nối và bot chơi thay lượt của họ.
+      const touched = touch(room, t, now())
+      const changed = tick(room, now(), rng) || touched
       return { changed, result: viewFor(room, t, since, now()) }
     })
   }
@@ -158,6 +161,7 @@ export function createApi(store: RoomStore | null, deps: { now: () => number; rn
           return {
             status: 200,
             body: await mutate(c, (room) => {
+              touch(room, t, now(), true)
               tick(room, now(), rng)
               intent(room, t, action as IntentAction, now(), rng)
               return { changed: true, result: viewFor(room, t, since, now()) }

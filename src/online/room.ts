@@ -238,7 +238,7 @@ export function intent(room: Room, token: string, action: IntentAction, now: num
 }
 
 /** Cập nhật "còn ở đây" cho người chơi. Trả về true nếu có thay đổi đáng lưu. */
-export function touch(room: Room, token: string, now: number): boolean {
+export function touch(room: Room, token: string, now: number, force = false): boolean {
   const watcher = spectatorOf(room, token)
   if (watcher) {
     if (now - watcher.lastSeen < 3000) return false
@@ -248,7 +248,7 @@ export function touch(room: Room, token: string, now: number): boolean {
   const seat = seatOf(room, token)
   if (!seat || seat.kind !== 'human') return false
   // Không ghi mỗi lần hỏi (đỡ tốn lệnh Redis): chỉ khi đã lâu, hoặc vừa quay lại sau mất kết nối.
-  if (now - seat.lastSeen < 3000) return false
+  if (!force && now - seat.lastSeen < 3000) return false
   seat.lastSeen = now
   return true
 }

@@ -170,6 +170,8 @@ function sendIntent(action: IntentAction) {
     .catch((error: unknown) => {
       useGameStore.setState({ awaitingServer: false })
       useUiStore.getState().showBanner(error instanceof Error ? error.message : 'Có lỗi máy chủ.', 'bad', 1.6)
+      // Máy chủ đã đi trước (vd. hết giờ lượt): hỏi lại ngay để màn hình bắt kịp, không để nút cũ nằm đó.
+      if (session === current) void pollOnce()
     })
 }
 
