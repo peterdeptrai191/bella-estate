@@ -18,6 +18,8 @@ export interface Player {
   rentDiscount: boolean
   /** Đã dừng ở Sân Bay: lượt sau được bay. */
   airportTicket: boolean
+  /** Đã đi qua (hoặc dừng đúng) Xuất Phát ít nhất một lần — hết "vòng đầu", được xây tới 3 nhà. */
+  passedStart: boolean
 }
 
 export interface TileState {
@@ -60,6 +62,8 @@ export interface TurnState {
   buildTile: number | null
   /** Ô vừa có được trong lần dừng này (mua hoặc mua lại) — chưa được xây Landmark. */
   acquiredTile: number | null
+  /** Số nhà của ô đang đứng lúc vừa dừng (Landmark chỉ xây khi ô đã có đủ 3 nhà từ trước lần dừng này). */
+  arrivalLevel: number | null
   /** Ô được quyền mua lại (sau khi đã trả/miễn tiền thuê). */
   buyoutTile: number | null
   /** Dừng đúng Xuất Phát: được xây 1 nhà miễn phí. */

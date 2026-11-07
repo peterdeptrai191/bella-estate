@@ -13,6 +13,7 @@ export function freshTurn(): TurnState {
     pending: null,
     buildTile: null,
     acquiredTile: null,
+    arrivalLevel: null,
     buyoutTile: null,
     freeHouse: false,
     festivalChoice: false,

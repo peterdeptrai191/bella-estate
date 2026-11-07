@@ -7,7 +7,7 @@ import { AIRPORT_INDEX, LANDMARK_LEVEL, isPurchasable, isValidTileIndex, tileDef
 import { drawRandomCard, isEarthquakeTarget, resolveCard } from './cards'
 import { type Ctx, GameRuleError, currentPlayer, emit, ensure, playerById, rollDie } from './context'
 import { afterRent, charge, settleDebtIfPossible } from './money'
-import { landOn, moveTo, sendToIsland, walk } from './movement'
+import { houseCap, landOn, moveTo, sendToIsland, walk } from './movement'
 import { advanceTurn, freshTurn } from './turn'
 import type { ActionResult, GameAction, GameState, HoldableCardId } from './types'
 import { buildCost, buyoutPrice, sellValue } from './valuation'
@@ -156,7 +156,7 @@ function build(ctx: Ctx, tileIndex: number): void {
   ensure(tileDef(tileIndex).kind === 'CITY' && tile.owner === player.id, 'Chỉ xây được trên thành phố của mình')
 
   if (t.freeHouse) {
-    ensure(tile.level < ECONOMY.city.maxHouses, 'Nhà miễn phí chỉ xây khi ô chưa đủ nhà')
+    ensure(tile.level < houseCap(player), 'Nhà miễn phí chỉ xây khi ô chưa đủ nhà')
     tile.level++
     t.freeHouse = false
     emit(ctx, { type: 'BUILT', playerId: player.id, tileIndex, level: tile.level, cost: 0, free: true })
@@ -168,6 +168,10 @@ function build(ctx: Ctx, tileIndex: number): void {
   const next = tile.level + 1
   if (next === LANDMARK_LEVEL) {
     ensure(t.acquiredTile !== tileIndex, 'Landmark chỉ xây được ở lần dừng sau khi có ô này')
+    // Đủ 3 nhà từ TRƯỚC lần dừng này mới được lên Landmark (vừa xây đủ 3 nhà thì chờ lần dừng sau).
+    ensure(t.arrivalLevel === ECONOMY.city.maxHouses, 'Landmark chỉ xây được khi ô đã có 3 nhà từ lần dừng trước')
+  } else {
+    ensure(next <= houseCap(player), `Vòng đầu (chưa qua Xuất Phát) chỉ xây tối đa ${ECONOMY.city.firstLapMaxHouses} nhà`)
   }
   const cost = buildCost(tileIndex, next)
   ensure(player.money >= cost, 'Không đủ tiền xây')
@@ -186,6 +190,7 @@ function buyout(ctx: Ctx): void {
   const tile = s.tiles[i]
   ensure(tile.owner !== null && tile.owner !== player.id, 'Ô này không thuộc đối thủ')
   ensure(tile.level < LANDMARK_LEVEL, 'Landmark không thể bị mua lại')
+  ensure(tileDef(i).kind !== 'RESORT', 'Khu Du Lịch không thể bị mua lại')
   const price = buyoutPrice(s, i)
   ensure(player.money >= price, 'Không đủ tiền mua lại')
 

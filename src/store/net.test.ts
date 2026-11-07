@@ -46,7 +46,7 @@ describe('Áp câu trả lời của server (chống phát trùng event)', () =>
       if (!last) return null
       return { full: false, seq: last.seq, from: 0, events: [], state: last.state }
     }
-    for (let step = 0; step < 2000; step++) {
+    for (let step = 0; step < 4000; step++) {
       const serverSeq = Math.min(log.length, 1 + Math.floor(step / 5))
       const snap = upto(serverSeq)
       if (!snap) continue

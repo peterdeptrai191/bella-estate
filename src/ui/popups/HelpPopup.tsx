@@ -92,13 +92,15 @@ export function HelpPopup() {
               Ra đôi được tung thêm lượt; ra đôi {E.dice.maxConsecutiveDoubles} lần liên tiếp thì bị đưa ra Đảo Hoang.
             </Item>
             <Item icon="🏠" title="Mua và xây">
-              Dừng ở đất trống thì mua được. Đứng trên đất của mình thì xây thêm nhà, đủ {E.city.maxHouses} nhà thì lên Landmark.
+              Dừng ở thành phố trống thì mua đất, kèm luôn nhà nếu muốn; dừng ở thành phố của mình thì xây thêm (nhiều nhà một lúc, không cần đủ bộ màu).
+              Vòng đầu (chưa qua Xuất Phát) tối đa {E.city.firstLapMaxHouses} nhà, từ vòng 2 tối đa {E.city.maxHouses} nhà. Ô đã có {E.city.maxHouses} nhà thì lần dừng sau
+              lên Landmark. Không mua thì ô vẫn trống.
             </Item>
             <Item icon="💸" title="Trả tiền thuê">
               Dừng trên đất đối thủ thì trả tiền thuê. Trọn nhóm màu: tiền thuê x{E.colorGroupRentMultiplier}.
             </Item>
             <Item icon="🤝" title="Mua lại đất đối thủ">
-              Trả thuê xong được mua lại ô đó với giá x{E.buyoutMultiplier} tổng giá trị đã đầu tư. Landmark không bị mua lại.
+              Trả thuê xong được mua lại ô đó với giá x{E.buyoutMultiplier} tổng giá trị đã đầu tư, tiền trả cho chủ cũ. Landmark và Khu Du Lịch không bị mua lại.
             </Item>
             <Item icon="🆘" title="Thiếu tiền">
               Phải bán nhà, đất cho ngân hàng với giá {pct(E.bankSellRatio)} giá trị. Bán hết vẫn thiếu thì phá sản.

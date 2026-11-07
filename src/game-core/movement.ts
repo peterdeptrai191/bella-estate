@@ -4,9 +4,15 @@ import { ECONOMY } from '../config/economy'
 import { CITY_INDICES, ISLAND_INDEX, tileDef } from './board'
 import { type Ctx, currentPlayer, emit } from './context'
 import { charge } from './money'
+import type { Player } from './types'
 import { netWorth, rentFor } from './valuation'
 
 type MoveMode = 'WALK' | 'FLY' | 'TELEPORT'
+
+/** Số nhà tối đa người chơi được có trên một thành phố: vòng đầu 2, từ vòng 2 (đã qua Xuất Phát) 3. */
+export function houseCap(player: Pick<Player, 'passedStart'>): number {
+  return player.passedStart ? ECONOMY.city.maxHouses : ECONOMY.city.firstLapMaxHouses
+}
 
 /** Đi tiến `steps` ô. Đi qua hoặc dừng đúng Xuất Phát được thưởng. */
 export function walk(ctx: Ctx, steps: number, mode: MoveMode): void {
@@ -18,6 +24,7 @@ export function walk(ctx: Ctx, steps: number, mode: MoveMode): void {
   emit(ctx, { type: 'PLAYER_MOVED', playerId: player.id, from, to, steps, mode })
   if (raw >= BOARD_SIZE) {
     player.money += ECONOMY.passStartBonus
+    player.passedStart = true
     emit(ctx, { type: 'PASSED_START', playerId: player.id, amount: ECONOMY.passStartBonus })
   }
 }
@@ -52,6 +59,7 @@ export function landOn(ctx: Ctx): void {
 
   t.buildTile = null
   t.acquiredTile = null
+  t.arrivalLevel = null
   t.buyoutTile = null
   t.freeHouse = false
   t.festivalChoice = false
@@ -59,7 +67,7 @@ export function landOn(ctx: Ctx): void {
   switch (def.kind) {
     case 'START': {
       const canUpgrade = CITY_INDICES.some(
-        (c) => s.tiles[c].owner === player.id && s.tiles[c].level < ECONOMY.city.maxHouses,
+        (c) => s.tiles[c].owner === player.id && s.tiles[c].level < houseCap(player),
       )
       if (canUpgrade) {
         t.freeHouse = true
@@ -89,7 +97,10 @@ export function landOn(ctx: Ctx): void {
       const owner = s.tiles[i].owner
       if (owner === null) return
       if (owner === player.id) {
-        if (def.kind === 'CITY') t.buildTile = i
+        if (def.kind === 'CITY') {
+          t.buildTile = i
+          t.arrivalLevel = s.tiles[i].level
+        }
         return
       }
       const amount = rentFor(s, i)

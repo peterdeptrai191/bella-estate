@@ -44,6 +44,7 @@ export function createGame(players: NewPlayer[], seed: number | string, options:
       heldCards: [],
       rentDiscount: false,
       airportTicket: false,
+      passedStart: false,
     })),
     tiles: Array.from({ length: BOARD_SIZE }, () => ({ owner: null, level: 0 })),
     currentPlayerIndex: 0,

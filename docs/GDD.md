@@ -110,6 +110,8 @@ Tiền khởi đầu: **1.500**
 | 3 nhà | 0,5P | 2P |
 | Landmark | 1P (cần có đủ 3 nhà) | 3P |
 
+- Vòng đầu (chưa đi qua Xuất Phát lần nào): mỗi thành phố tối đa 2 nhà; từ vòng 2 tối đa 3 nhà. Mỗi lần dừng xây được nhiều nhà một lúc, không cần đủ bộ màu.
+- Landmark: ô đã có 3 nhà thì lần dừng sau mới xây được; không mua thẳng Landmark ở lần mua đầu.
 - Sở hữu trọn một nhóm màu thì tiền thuê mọi ô trong nhóm x2.
 - Landmark không thể bị mua lại.
 
@@ -121,7 +123,7 @@ Tiền khởi đầu: **1.500**
 
 ### Cơ chế mua lại (điểm nhấn chính)
 
-Khi dừng trên đất của đối thủ, sau khi trả tiền thuê, người chơi được quyền mua lại ô đó với giá 2 lần tổng giá trị đã đầu tư (đất cộng nhà). Chủ cũ nhận toàn bộ số tiền này. Không áp dụng với Landmark.
+Khi dừng trên đất của đối thủ, sau khi trả tiền thuê, người chơi được quyền mua lại ô đó với giá 2 lần tổng giá trị đã đầu tư (đất cộng nhà). Chủ cũ nhận toàn bộ số tiền này. Không áp dụng với Landmark và Khu Du Lịch.
 
 ### Thiếu tiền
 

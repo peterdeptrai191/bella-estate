@@ -50,6 +50,8 @@ export const ECONOMY = {
   city: {
     /** Số nhà tối đa trước khi lên Landmark. Cấp độ: 0 = đất trống, 1–3 = nhà, 4 = Landmark. */
     maxHouses: 3,
+    /** Vòng đầu (người chơi chưa đi qua Xuất Phát lần nào): mỗi thành phố tối đa bấy nhiêu nhà. */
+    firstLapMaxHouses: 2,
     /** Chi phí để đạt mỗi cấp, tính theo P. Cấp 0 = giá mua đất. */
     buildCostRatio: [1, 0.5, 0.5, 0.5, 1],
     /** Tiền thuê ở mỗi cấp, tính theo P. */

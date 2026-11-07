@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AIRPORT_INDEX, FESTIVAL_INDEX, groupTiles, RESORT_INDICES } from './board'
 import { GameRuleError } from './context'
-import { act, arrive, eventsOf, newGame, own, patch, player, run, setMoney } from './testHelpers'
+import { act, arrive, eventsOf, newGame, own, patch, player, run, setMoney, lapped } from './testHelpers'
 import { rentFor } from './valuation'
 
 const [, , B3] = groupTiles('brown') // ô 4, P = 60
@@ -33,9 +33,30 @@ describe('Mua đất', () => {
 })
 
 describe('Xây nhà và Landmark', () => {
-  it('mua xong được xây ngay tới 3 nhà, mỗi nhà 0,5P', () => {
+  it('vòng đầu (chưa qua Xuất Phát): mua đất kèm tối đa 2 nhà, mỗi nhà 0,5P', () => {
+    const two = run(arrive(newGame(), B3).state, { type: 'BUY' }, { type: 'BUILD', tileIndex: B3 }, { type: 'BUILD', tileIndex: B3 }).state
+    expect(two.tiles[B3].level).toBe(2)
+    expect(player(two, 'p1').money).toBe(1500 - 60 - 30 * 2)
+    expect(() => act(two, { type: 'BUILD', tileIndex: B3 })).toThrow(/Vòng đầu/)
+  })
+
+  it('vòng đầu: dừng ở thành phố của mình cũng chỉ xây tới 2 nhà', () => {
+    const { state } = arrive(own(newGame(), 'p1', [B3], 1), B3)
+    const next = act(state, { type: 'BUILD', tileIndex: B3 }).state
+    expect(next.tiles[B3].level).toBe(2)
+    expect(() => act(next, { type: 'BUILD', tileIndex: B3 })).toThrow(/Vòng đầu/)
+  })
+
+  it('đi qua Xuất Phát thì hết vòng đầu', () => {
+    const s = newGame()
+    expect(s.players[0].passedStart).toBe(false)
+    const { state } = arrive(s, 2) // đi từ ô 31 qua Xuất Phát tới ô 2
+    expect(state.players[0].passedStart).toBe(true)
+  })
+
+  it('từ vòng 2: mua đất kèm tới 3 nhà trong một lần dừng', () => {
     const { state } = run(
-      arrive(newGame(), B3).state,
+      arrive(lapped(newGame()), B3).state,
       { type: 'BUY' },
       { type: 'BUILD', tileIndex: B3 },
       { type: 'BUILD', tileIndex: B3 },
@@ -45,15 +66,20 @@ describe('Xây nhà và Landmark', () => {
     expect(player(state, 'p1').money).toBe(1500 - 60 - 30 * 3)
   })
 
-  it('Landmark cần đủ 3 nhà và không xây được trong lần dừng vừa mua ô', () => {
+  it('Landmark không mua thẳng ở lần mua, và vừa xây đủ 3 nhà thì phải chờ lần dừng sau', () => {
     const bought = run(
-      arrive(newGame(), B3).state,
+      arrive(lapped(newGame()), B3).state,
       { type: 'BUY' },
       { type: 'BUILD', tileIndex: B3 },
       { type: 'BUILD', tileIndex: B3 },
       { type: 'BUILD', tileIndex: B3 },
     ).state
     expect(() => act(bought, { type: 'BUILD', tileIndex: B3 })).toThrow(/Landmark/)
+    // Dừng ở ô mình có 2 nhà: xây thêm tới 3 nhà được, nhưng Landmark thì chưa.
+    const { state } = arrive(own(lapped(newGame()), 'p1', [B3], 2), B3)
+    const three = act(state, { type: 'BUILD', tileIndex: B3 }).state
+    expect(three.tiles[B3].level).toBe(3)
+    expect(() => act(three, { type: 'BUILD', tileIndex: B3 })).toThrow(/Landmark/)
   })
 
   it('lần dừng sau trên đất của mình: xây Landmark giá 1P', () => {
@@ -120,13 +146,13 @@ describe('Tiền thuê và mua lại', () => {
     expect(() => act(paid, { type: 'BUYOUT' })).toThrow(GameRuleError)
   })
 
-  it('Khu Du Lịch: tiền thuê theo số khu chủ sở hữu có, mua lại được', () => {
+  it('Khu Du Lịch: tiền thuê theo số khu chủ sở hữu có, KHÔNG mua lại được', () => {
     const s = own(newGame(), 'p2', RESORT_INDICES.slice(0, 2))
     const { events, state } = arrive(s, RESORT_INDICES[0])
     expect(eventsOf(events, 'RENT_DUE')[0].amount).toBe(100)
-    const bought = run(state, { type: 'PAY_RENT' }, { type: 'BUYOUT' }).state
-    expect(bought.tiles[RESORT_INDICES[0]].owner).toBe('p1')
-    expect(player(bought, 'p1').money).toBe(1500 - 100 - 400)
+    const paid = act(state, { type: 'PAY_RENT' }).state
+    expect(() => act(paid, { type: 'BUYOUT' })).toThrow(/Khu Du Lịch/)
+    expect(paid.tiles[RESORT_INDICES[0]].owner).toBe('p2')
   })
 })
 

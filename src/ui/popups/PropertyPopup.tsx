@@ -1,6 +1,7 @@
 /** Popup Mua đất (chọn luôn số nhà), Xây nhà (chọn cấp) và Mua lại (hiện giá). */
 import { useState } from 'react'
 import { BOARD, COLOR_GROUPS } from '../../config/board'
+import { ECONOMY } from '../../config/economy'
 import { buyoutPrice, LANDMARK_LEVEL, rentFor, type GameState, type PlayerId } from '../../game-core'
 import { levelOptions, previewAfter, type LevelOption } from '../../store/match'
 import { useSeatSkin } from '../../store/gameStore'
@@ -131,9 +132,13 @@ export function CityPopup({ game, tileIndex, mode }: { game: GameState; tileInde
             <Money amount={buyoutPrice(after, tileIndex)} />
           </Line>
         )}
+        {!me.passedStart && (
+          <p className="text-center text-[0.95rem] font-bold text-amber-600">
+            Vòng đầu: tối đa {ECONOMY.city.firstLapMaxHouses} nhà — đi qua Xuất Phát để xây tới {ECONOMY.city.maxHouses} nhà
+          </p>
+        )}
         <p className="text-center text-[0.9rem] text-stone-400">
-          Landmark: <b>{BOARD[tileIndex].landmark}</b>
-          {mode === 'BUY' && ' · xây được từ lần dừng sau'}
+          Landmark: <b>{BOARD[tileIndex].landmark}</b> · xây khi ô đã có {ECONOMY.city.maxHouses} nhà từ lần dừng trước
         </p>
       </div>
     </Modal>

@@ -44,6 +44,8 @@ var ECONOMY = {
   city: {
     /** Số nhà tối đa trước khi lên Landmark. Cấp độ: 0 = đất trống, 1–3 = nhà, 4 = Landmark. */
     maxHouses: 3,
+    /** Vòng đầu (người chơi chưa đi qua Xuất Phát lần nào): mỗi thành phố tối đa bấy nhiêu nhà. */
+    firstLapMaxHouses: 2,
     /** Chi phí để đạt mỗi cấp, tính theo P. Cấp 0 = giá mua đất. */
     buildCostRatio: [1, 0.5, 0.5, 0.5, 1],
     /** Tiền thuê ở mỗi cấp, tính theo P. */
@@ -311,6 +313,7 @@ function freshTurn() {
     pending: null,
     buildTile: null,
     acquiredTile: null,
+    arrivalLevel: null,
     buyoutTile: null,
     freeHouse: false,
     festivalChoice: false
@@ -369,7 +372,8 @@ function createGame(players, seed, options = {}) {
       islandTurnsLeft: 0,
       heldCards: [],
       rentDiscount: false,
-      airportTicket: false
+      airportTicket: false,
+      passedStart: false
     })),
     tiles: Array.from({ length: BOARD_SIZE }, () => ({ owner: null, level: 0 })),
     currentPlayerIndex: 0,
@@ -473,6 +477,9 @@ function declareBankruptcy(ctx, payments) {
 }
 
 // src/game-core/movement.ts
+function houseCap(player) {
+  return player.passedStart ? ECONOMY.city.maxHouses : ECONOMY.city.firstLapMaxHouses;
+}
 function walk(ctx, steps, mode) {
   const player = currentPlayer(ctx.s);
   const from = player.position;
@@ -482,6 +489,7 @@ function walk(ctx, steps, mode) {
   emit(ctx, { type: "PLAYER_MOVED", playerId: player.id, from, to, steps, mode });
   if (raw >= BOARD_SIZE) {
     player.money += ECONOMY.passStartBonus;
+    player.passedStart = true;
     emit(ctx, { type: "PASSED_START", playerId: player.id, amount: ECONOMY.passStartBonus });
   }
 }
@@ -510,13 +518,14 @@ function landOn(ctx) {
   const def = tileDef(i);
   t.buildTile = null;
   t.acquiredTile = null;
+  t.arrivalLevel = null;
   t.buyoutTile = null;
   t.freeHouse = false;
   t.festivalChoice = false;
   switch (def.kind) {
     case "START": {
       const canUpgrade = CITY_INDICES.some(
-        (c) => s.tiles[c].owner === player.id && s.tiles[c].level < ECONOMY.city.maxHouses
+        (c) => s.tiles[c].owner === player.id && s.tiles[c].level < houseCap(player)
       );
       if (canUpgrade) {
         t.freeHouse = true;
@@ -546,7 +555,10 @@ function landOn(ctx) {
       const owner = s.tiles[i].owner;
       if (owner === null) return;
       if (owner === player.id) {
-        if (def.kind === "CITY") t.buildTile = i;
+        if (def.kind === "CITY") {
+          t.buildTile = i;
+          t.arrivalLevel = s.tiles[i].level;
+        }
         return;
       }
       const amount = rentFor(s, i);
@@ -770,7 +782,7 @@ function build(ctx, tileIndex) {
   const tile = s.tiles[tileIndex];
   ensure(tileDef(tileIndex).kind === "CITY" && tile.owner === player.id, "Ch\u1EC9 x\xE2y \u0111\u01B0\u1EE3c tr\xEAn th\xE0nh ph\u1ED1 c\u1EE7a m\xECnh");
   if (t.freeHouse) {
-    ensure(tile.level < ECONOMY.city.maxHouses, "Nh\xE0 mi\u1EC5n ph\xED ch\u1EC9 x\xE2y khi \xF4 ch\u01B0a \u0111\u1EE7 nh\xE0");
+    ensure(tile.level < houseCap(player), "Nh\xE0 mi\u1EC5n ph\xED ch\u1EC9 x\xE2y khi \xF4 ch\u01B0a \u0111\u1EE7 nh\xE0");
     tile.level++;
     t.freeHouse = false;
     emit(ctx, { type: "BUILT", playerId: player.id, tileIndex, level: tile.level, cost: 0, free: true });
@@ -781,6 +793,9 @@ function build(ctx, tileIndex) {
   const next = tile.level + 1;
   if (next === LANDMARK_LEVEL) {
     ensure(t.acquiredTile !== tileIndex, "Landmark ch\u1EC9 x\xE2y \u0111\u01B0\u1EE3c \u1EDF l\u1EA7n d\u1EEBng sau khi c\xF3 \xF4 n\xE0y");
+    ensure(t.arrivalLevel === ECONOMY.city.maxHouses, "Landmark ch\u1EC9 x\xE2y \u0111\u01B0\u1EE3c khi \xF4 \u0111\xE3 c\xF3 3 nh\xE0 t\u1EEB l\u1EA7n d\u1EEBng tr\u01B0\u1EDBc");
+  } else {
+    ensure(next <= houseCap(player), `V\xF2ng \u0111\u1EA7u (ch\u01B0a qua Xu\u1EA5t Ph\xE1t) ch\u1EC9 x\xE2y t\u1ED1i \u0111a ${ECONOMY.city.firstLapMaxHouses} nh\xE0`);
   }
   const cost = buildCost(tileIndex, next);
   ensure(player.money >= cost, "Kh\xF4ng \u0111\u1EE7 ti\u1EC1n x\xE2y");
@@ -798,6 +813,7 @@ function buyout(ctx) {
   const tile = s.tiles[i];
   ensure(tile.owner !== null && tile.owner !== player.id, "\xD4 n\xE0y kh\xF4ng thu\u1ED9c \u0111\u1ED1i th\u1EE7");
   ensure(tile.level < LANDMARK_LEVEL, "Landmark kh\xF4ng th\u1EC3 b\u1ECB mua l\u1EA1i");
+  ensure(tileDef(i).kind !== "RESORT", "Khu Du L\u1ECBch kh\xF4ng th\u1EC3 b\u1ECB mua l\u1EA1i");
   const price = buyoutPrice(s, i);
   ensure(player.money >= price, "Kh\xF4ng \u0111\u1EE7 ti\u1EC1n mua l\u1EA1i");
   const previousOwner = playerById(s, tile.owner);

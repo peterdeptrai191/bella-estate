@@ -18,8 +18,13 @@ function standingOn(state: GameState, tile: number): GameState {
 }
 
 describe('Xem trước lựa chọn mua/xây', () => {
-  it('levelOptions khi mua: đất + tối đa 3 nhà (Landmark chưa được xây ở lần mua), giá cộng dồn', () => {
+  it('levelOptions vòng đầu (chưa qua Xuất Phát): đất + tối đa 2 nhà', () => {
+    expect(levelOptions(standingOn(game(), 6), 6, true).map((o) => o.level)).toEqual([0, 1, 2])
+  })
+
+  it('levelOptions khi mua từ vòng 2: đất + tối đa 3 nhà (Landmark chưa được xây ở lần mua), giá cộng dồn', () => {
     const s = standingOn(game(), 6)
+    s.players[0].passedStart = true
     const options = levelOptions(s, 6, true)
     expect(options.map((o) => o.level)).toEqual([0, 1, 2, 3])
     const land = landPrice(6)

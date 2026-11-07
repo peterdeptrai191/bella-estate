@@ -90,6 +90,14 @@ export function own(state: GameState, playerId: PlayerId, tiles: number[], level
   })
 }
 
+/** Đánh dấu người chơi đã qua Xuất Phát (hết vòng đầu, được xây tới 3 nhà). */
+export function lapped(state: GameState, playerId: PlayerId = 'p1'): GameState {
+  return patch(state, (s) => {
+    const p = s.players.find((x) => x.id === playerId)
+    if (p) p.passedStart = true
+  })
+}
+
 export function setMoney(state: GameState, playerId: PlayerId, money: number): GameState {
   return patch(state, (s) => {
     const p = s.players.find((x) => x.id === playerId)

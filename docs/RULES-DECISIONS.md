@@ -5,12 +5,12 @@ Những điểm GDD chưa nói rõ, đã được chọn khi viết `src/game-co
 | # | Chủ đề | Cách đang làm | File test |
 | --- | --- | --- | --- |
 | 1 | Bố cục bàn cờ | Chủ đề "Vòng quanh thế giới" (GDD mục 3). Góc: 0 Xuất Phát, 8 Đảo Hoang, 16 Lễ Hội Thế Giới, 24 Sân Bay Quốc Tế. Mỗi cạnh 5 thành phố + 1 Khu Du Lịch + 1 ô đặc biệt (Cơ Hội ở ô 3, 14, 22; Thuế Tài Sản ở ô 30). Nhóm Đông Nam Á (6, 7, 9) và Trung Đông (15, 17, 18) nằm vắt qua góc. | `config/board.test.ts` |
-| 2 | Xây trong một lần dừng | Mỗi lần dừng trên đất mình được xây liên tiếp nhiều nhà (đủ tiền là được). | `property.test.ts` |
-| 3 | Landmark | Cần đủ 3 nhà, và **không** xây được trong cùng lần dừng vừa mua/mua lại ô. Phải dừng lại lần sau. | `property.test.ts` |
+| 2 | Xây trong một lần dừng | Mỗi lần dừng trên đất mình (hoặc ngay khi mua) được xây liên tiếp nhiều nhà, không cần đủ bộ màu. **Vòng đầu** (người chơi chưa đi qua / dừng Xuất Phát lần nào, `Player.passedStart`) tối đa 2 nhà; từ vòng 2 tối đa 3 nhà (`ECONOMY.city.firstLapMaxHouses`, `maxHouses`). Không mua thì ô vẫn trống, không đấu giá. | `property.test.ts`, `match.test.ts` |
+| 3 | Landmark | Ô phải có đủ 3 nhà **từ trước lần dừng này** (`TurnState.arrivalLevel`): vừa xây đủ 3 nhà hoặc vừa mua/mua lại ô thì chờ lần dừng sau. Không mua thẳng Landmark ở lần mua. | `property.test.ts` |
 | 4 | Đảo Hoang | Dừng ở ô Đảo Hoang = bị kẹt (như bị đưa ra đảo). Sau 3 lần tung trượt thì lượt sau tự do. Thoát bằng đôi thì đi luôn nhưng **không** được tung thêm. | `island.test.ts` |
 | 5 | Sân Bay | Lượt sau được chọn: bay (100) tới ô bất kỳ trừ Sân Bay, hoặc tung bình thường (mất vé). Dừng ở Sân Bay bằng đôi thì mất lượt tung thêm. Bay qua Xuất Phát vẫn +200. | `property.test.ts` |
 | 6 | Lễ Hội | Tùy chọn, chỉ khi có ít nhất 1 thành phố. Lễ Hội đi theo ô khi ô bị mua lại; mất khi ô bị bán cho ngân hàng. | `property.test.ts` |
-| 7 | Mua lại | Áp dụng cho cả Khu Du Lịch (2 × 200). Được mua lại cả khi dùng Lá Chắn miễn tiền thuê. | `property.test.ts`, `cards.test.ts` |
+| 7 | Mua lại | Trả thuê trước, rồi được mua lại với giá 2 × giá trị đã đầu tư (đất + nhà), tiền trả cho chủ cũ. **Không** áp dụng cho Landmark và Khu Du Lịch. Được mua lại cả khi dùng Lá Chắn miễn tiền thuê. | `property.test.ts`, `cards.test.ts` |
 | 8 | Tổng tài sản | = tiền mặt + toàn bộ giá trị đã đầu tư (đất + nhà, giá gốc). Dùng cho ô Thuế (10%, làm tròn xuống) và xếp hạng khi hết vòng. | `valuation.test.ts` |
 | 9 | Thuế Bất Ngờ | Landmark tính là 3 nhà. | `cards.test.ts` |
 | 10 | Bán tài sản | Chỉ được bán khi đang thiếu tiền. Bán **nguyên ô** (đất + nhà) lấy 50% giá trị đầu tư, chưa có bán lẻ từng nhà. Đủ tiền thì tự trả nợ. | `debt.test.ts` |
