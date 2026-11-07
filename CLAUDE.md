@@ -92,7 +92,7 @@ online     →  game-core, config, net   (không import React/Three/store/ui/sce
 - `ui/Hud.tsx` ghép mọi thứ; popup ở `ui/popups/`, khung người chơi + lớp prompt ở `ui/hud/`. Popup chỉ hiện khi animation đã xong. Nút gửi action qua `ui/act.ts`.
 - Sau khi tung: số điểm nổi trên xúc xắc (`scene/DiceTotal.tsx`) và viền vàng ô sẽ dừng (`scene/TargetFrame.tsx`), lấy từ `uiStore.diceShown` / `targetTile` do eventPlayer đặt. Nút Tung xúc xắc nằm dưới xúc xắc giữa bàn cờ, theo toạ độ `uiStore.boardCenter` (`scene/BoardCenterTracker.tsx`). Khung người chơi có dải tài sản (đất, số nhà, thẻ đang giữ — `heldCards`/`rentDiscount` trong view). Nút ? mở `ui/popups/HelpPopup.tsx` (số lấy từ `ECONOMY`).
 - Chọn ô trên bàn cờ 3D: popup gọi `useBoardPick({ tiles, onPick })`; `Board`/`Tile` tô sáng ô chọn được, bấm ô thì gọi `onPick`. Không ở chế độ chọn thì bấm ô mở `TileInfo`.
-- Phong cách: chữ Baloo 2, nút nổi khối `btn-3d btn-blue|green|pink|yellow|gray`, khung `Modal` (ruy băng + giấy xếp chồng) trong `ui/kit.tsx`. Cỡ chữ gốc co theo khung hình (`index.css`) nên mọi kích thước dùng `rem`. Giao diện thiết kế cho màn hình ngang; điện thoại cầm dọc thì hiện nhắc xoay ngang.
+- Phong cách: chữ Baloo 2, nút nổi khối `btn-3d btn-blue|green|pink|yellow|gray`, khung `Modal` (ruy băng + giấy xếp chồng) trong `ui/kit.tsx`. Cỡ chữ gốc co theo khung hình (`index.css`) nên mọi kích thước dùng `rem`. Giao diện chơi được cả ngang lẫn dọc (biến thể `portrait:` của Tailwind, cỡ chữ gốc theo chiều ngang khi cầm dọc).
 - Dev: nút "Bot chơi thay" ở thanh trên; `__bella.ui.setState({ turnTimeScale: 100 })` kéo dài đồng hồ lượt; `__bella.newMatch(seed)` mở ván với 3 bot; `__bella.menu()` về trang chủ.
 
 ## Chơi online (`src/online/`, giống Bella Poker)
