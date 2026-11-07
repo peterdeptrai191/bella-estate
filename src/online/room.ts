@@ -37,6 +37,8 @@ export interface RoomSeat {
   playerId: PlayerId | null
   /** Lần cuối người chơi hỏi server (ms). */
   lastSeen: number
+  /** Mã nhận diện trình duyệt của người ngồi ghế này (để vào lại bằng mã phòng). */
+  clientId?: string
 }
 
 /** Người xem: vào khi phòng đã đủ người / ván đã bắt đầu. Chỉ xem, không gửi được ý định. */
@@ -138,6 +140,15 @@ function uniqueName(room: Room, requested: unknown): string {
  * Phòng đã đủ người hoặc đã bắt đầu → người xem nếu `allowSpectate` (trả về -1), không thì báo lỗi.
  */
 export function joinRoom(room: Room, request: JoinRequest, token: string, now: number, rng: Rng, allowSpectate = false): number {
+  // Cùng trình duyệt quay lại (mất khóa ghế, tải lại, đổi tab…): trả lại đúng ghế cũ, không thành người xem.
+  const mine = request.clientId ? room.seats.findIndex((s) => s.clientId === request.clientId) : -1
+  if (mine >= 0) {
+    const seat = room.seats[mine]
+    seat.token = token
+    seat.lastSeen = now
+    room.spectators = (room.spectators ?? []).filter((w) => w.token !== token)
+    return mine
+  }
   if (room.game || room.seats.length >= room.capacity) {
     if (!allowSpectate) throw new GameRuleError(room.game ? 'Ván đã bắt đầu' : 'Phòng đã đủ người')
     const spectators = (room.spectators ??= [])
@@ -149,7 +160,7 @@ export function joinRoom(room: Room, request: JoinRequest, token: string, now: n
   const name = uniqueName(room, request.name)
   let skin = skinById(request.skin).id
   if (room.seats.some((s) => s.skin === skin)) skin = SEAT_SKINS.find((k) => !room.seats.some((s) => s.skin === k)) ?? skin
-  room.seats.push({ token, name, skin, kind: 'human', playerId: null, lastSeen: now })
+  room.seats.push({ token, name, skin, kind: 'human', playerId: null, lastSeen: now, ...(request.clientId ? { clientId: request.clientId } : {}) })
   if (room.seats.length >= room.capacity) start(room, now, rng)
   return room.seats.length - 1
 }
@@ -207,6 +218,7 @@ export function leaveRoom(room: Room, token: string): void {
   }
   seat.kind = 'bot'
   seat.token = null
+  // Tự thoát vẫn giữ mã trình duyệt: vào lại bằng mã phòng thì nhận lại ghế (bot chơi thay tới khi bấm Tắt bot).
 }
 
 // ---------- Ván đấu ----------

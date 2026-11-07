@@ -171,7 +171,7 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
     const resumed = await post<RoomView>({ op: 'resume', code: a.code, token: a.token })
     expect(resumed.lobby.seats[0]).toMatchObject({ kind: 'human', connected: true })
     expect(resumed.game?.full).toBe(true)
-    // Tự thoát thì không lấy lại được ghế.
+    // Tự thoát thì khóa ghế cũ hết hiệu lực (vào lại bằng mã phòng từ cùng trình duyệt thì nhận lại ghế — test bên dưới).
     await post({ op: 'leave', code: a.code, token: a.token })
     expect((await poll(a.code, a.token, -1)).status).toBe(403)
   })
@@ -300,6 +300,29 @@ describe('API chơi online (2 người chơi giả lập, kho bộ nhớ)', () =
       }
     }
     throw new Error('Không gặp ô mua được')
+  })
+
+  it('mất khóa ghế (máy tính tắt tab…): nhập lại mã phòng cùng trình duyệt thì nhận lại đúng ghế, không thành người xem', async () => {
+    const { post } = setup()
+    const idA = 'client-aaaaaaaaaaaaaaaa'
+    const idB = 'client-bbbbbbbbbbbbbbbb'
+    const a = await post<JoinResponse>({ op: 'create', name: 'An', skin: '', capacity: 2, clientId: idA })
+    await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '', clientId: idB })
+    const again = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '', clientId: idB })
+    expect(again.view.lobby.spectating).toBe(false)
+    expect(again.view.lobby.you).toBe(1)
+    expect(again.view.game?.you).toBe('p2')
+    expect(again.view.lobby.seats).toHaveLength(2)
+    // Người lạ (khác trình duyệt) vào bằng mã thì vẫn là người xem.
+    const other = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '', clientId: 'client-cccccccccccccccc' })
+    expect(other.view.lobby.spectating).toBe(true)
+    // Đã bấm Thoát rồi vào lại: nhận lại ghế, bot chơi thay tới khi bấm Tắt bot.
+    await post({ op: 'leave', code: a.code, token: again.token })
+    const back = await post<JoinResponse>({ op: 'join', code: a.code, name: 'Bình', skin: '', clientId: idB })
+    expect(back.view.lobby.you).toBe(1)
+    expect(back.view.lobby.seats[1].kind).toBe('bot')
+    const resumed = await post<RoomView>({ op: 'resume', code: a.code, token: back.token })
+    expect(resumed.lobby.seats[1].kind).toBe('human')
   })
 
   it('kiểm tra sống trả về loại kho', async () => {

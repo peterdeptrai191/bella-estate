@@ -16,6 +16,30 @@ interface Session {
 }
 
 let session: Session | null = null
+
+const CLIENT_KEY = 'bella-estate:client-id'
+let memoryClientId = ''
+
+/** Mã nhận diện trình duyệt này, gửi kèm khi vào phòng để vào lại đúng ghế cũ. */
+function clientId(): string {
+  try {
+    const saved = localStorage.getItem(CLIENT_KEY)
+    if (saved) return saved
+  } catch {
+    // localStorage bị chặn: dùng mã tạm trong bộ nhớ.
+  }
+  if (!memoryClientId) {
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    memoryClientId = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  try {
+    localStorage.setItem(CLIENT_KEY, memoryClientId)
+  } catch {
+    // bỏ qua
+  }
+  return memoryClientId
+}
 /** Số lô event đã nhận (-1 = chưa có ván). */
 let since = -1
 let pollTimer: ReturnType<typeof setTimeout> | null = null
@@ -178,7 +202,7 @@ async function run(label: string, body: Record<string, unknown>) {
   const online = useOnlineStore.getState()
   online.set({ status: 'connecting', error: null, lobby: null, pendingLabel: label })
   try {
-    begin(await call<JoinResponse>(body))
+    begin(await call<JoinResponse>({ ...body, clientId: clientId() }))
   } catch (error) {
     online.set({ status: 'error', error: error instanceof Error ? error.message : String(error) })
   }

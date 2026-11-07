@@ -1956,6 +1956,14 @@ function uniqueName(room, requested) {
   return name;
 }
 function joinRoom(room, request, token2, now, rng, allowSpectate = false) {
+  const mine = request.clientId ? room.seats.findIndex((s) => s.clientId === request.clientId) : -1;
+  if (mine >= 0) {
+    const seat = room.seats[mine];
+    seat.token = token2;
+    seat.lastSeen = now;
+    room.spectators = (room.spectators ?? []).filter((w) => w.token !== token2);
+    return mine;
+  }
   if (room.game || room.seats.length >= room.capacity) {
     if (!allowSpectate) throw new GameRuleError(room.game ? "V\xE1n \u0111\xE3 b\u1EAFt \u0111\u1EA7u" : "Ph\xF2ng \u0111\xE3 \u0111\u1EE7 ng\u01B0\u1EDDi");
     const spectators = room.spectators ??= [];
@@ -1966,7 +1974,7 @@ function joinRoom(room, request, token2, now, rng, allowSpectate = false) {
   const name = uniqueName(room, request.name);
   let skin = skinById(request.skin).id;
   if (room.seats.some((s) => s.skin === skin)) skin = SEAT_SKINS.find((k) => !room.seats.some((s) => s.skin === k)) ?? skin;
-  room.seats.push({ token: token2, name, skin, kind: "human", playerId: null, lastSeen: now });
+  room.seats.push({ token: token2, name, skin, kind: "human", playerId: null, lastSeen: now, ...request.clientId ? { clientId: request.clientId } : {} });
   if (room.seats.length >= room.capacity) start(room, now, rng);
   return room.seats.length - 1;
 }
@@ -2212,7 +2220,8 @@ function token(value) {
   return t;
 }
 function joinRequest(body) {
-  return { name: str(body.name, 40), skin: str(body.skin, 40) };
+  const clientId = str(body.clientId, 64);
+  return { name: str(body.name, 40), skin: str(body.skin, 40), .../^[a-zA-Z0-9-]{16,64}$/.test(clientId) ? { clientId } : {} };
 }
 function createApi(store, deps) {
   const { now, rng } = deps;

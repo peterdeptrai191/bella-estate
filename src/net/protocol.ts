@@ -95,6 +95,8 @@ export interface RoomView {
 export interface JoinRequest {
   name: string
   skin: string
+  /** Mã nhận diện trình duyệt (lưu localStorage). Vào lại phòng cũ bằng mã phòng thì nhận lại đúng ghế của mình. */
+  clientId?: string
 }
 
 export type ApiRequest =

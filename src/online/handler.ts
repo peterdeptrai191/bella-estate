@@ -41,7 +41,8 @@ function token(value: unknown): string {
 }
 
 function joinRequest(body: Record<string, unknown>): JoinRequest {
-  return { name: str(body.name, 40), skin: str(body.skin, 40) }
+  const clientId = str(body.clientId, 64)
+  return { name: str(body.name, 40), skin: str(body.skin, 40), ...(/^[a-zA-Z0-9-]{16,64}$/.test(clientId) ? { clientId } : {}) }
 }
 
 export function createApi(store: RoomStore | null, deps: { now: () => number; rng: Rng }) {
