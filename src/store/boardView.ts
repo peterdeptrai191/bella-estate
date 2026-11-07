@@ -30,6 +30,8 @@ export interface BoardView {
   players: PlayerView[]
   tiles: TileView[]
   festivalTile: number | null
+  /** Số lần Lễ Hội đã tổ chức (hệ số tiền thuê Lễ Hội). */
+  festivalCount: number
   currentPlayerId: PlayerId
   dice: [number, number]
   winner: PlayerId | null
@@ -49,6 +51,7 @@ export function viewFromGame(state: GameState): BoardView {
     })),
     tiles: state.tiles.map((t) => ({ owner: t.owner, level: t.level })),
     festivalTile: state.festivalTile,
+    festivalCount: state.festivalCount || 0,
     currentPlayerId: state.players[state.currentPlayerIndex].id,
     dice: state.turn.dice ?? [5, 3],
     winner: state.winner,
@@ -123,7 +126,7 @@ export function applyEventToView(view: BoardView, event: GameEvent): BoardView {
     case 'MONEY_RECEIVED':
       return addMoney(view, event.playerId, event.amount)
     case 'FESTIVAL_HOSTED':
-      return { ...view, festivalTile: event.tileIndex }
+      return { ...view, festivalTile: event.tileIndex, festivalCount: event.count }
     case 'HOUSE_DESTROYED':
       return setTile(view, event.tileIndex, { ...view.tiles[event.tileIndex], level: event.level })
     case 'PROPERTY_SOLD':
@@ -146,7 +149,7 @@ export function applyEventToView(view: BoardView, event: GameEvent): BoardView {
  */
 export function viewMatchesGame(view: BoardView, state: GameState): boolean {
   const truth = viewFromGame(state)
-  if (view.festivalTile !== truth.festivalTile || view.players.length !== truth.players.length) return false
+  if (view.festivalTile !== truth.festivalTile || view.festivalCount !== truth.festivalCount || view.players.length !== truth.players.length) return false
   const playersOk = view.players.every((p, i) => {
     const t = truth.players[i]
     return p.id === t.id && p.money === t.money && p.position === t.position && p.bankrupt === t.bankrupt

@@ -87,6 +87,8 @@ export interface GameState {
   maxRounds: number
   /** Thành phố đang tổ chức Lễ Hội. */
   festivalTile: number | null
+  /** Số lần Lễ Hội đã được tổ chức trong ván (hệ số tiền thuê Lễ Hội tăng theo). */
+  festivalCount: number
   /** Trạng thái RNG (mulberry32). Cùng seed + cùng chuỗi action = cùng kết quả. */
   rngState: number
   turn: TurnState
@@ -143,7 +145,7 @@ export type GameEvent =
   | { type: 'ISLAND_STAY'; playerId: PlayerId; turnsLeft: number }
   | { type: 'ISLAND_ESCAPED'; playerId: PlayerId; method: 'DOUBLES' | 'FEE' | 'CARD' }
   | { type: 'AIRPORT_TICKET'; playerId: PlayerId }
-  | { type: 'FESTIVAL_HOSTED'; playerId: PlayerId; tileIndex: number; previousTile: number | null }
+  | { type: 'FESTIVAL_HOSTED'; playerId: PlayerId; tileIndex: number; previousTile: number | null; count: number; multiplier: number }
   | { type: 'HOUSE_DESTROYED'; byPlayerId: PlayerId; owner: PlayerId; tileIndex: number; level: number }
   /** Rút thẻ Động Đất nhưng không đối thủ nào có nhà để phá (thẻ mất tác dụng). */
   | { type: 'EARTHQUAKE_NO_TARGET'; playerId: PlayerId }

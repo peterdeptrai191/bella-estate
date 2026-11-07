@@ -1,11 +1,12 @@
 /**
- * Các lựa chọn làm trực tiếp trên bàn cờ 3D: chọn ô cho Lễ Hội, nhà miễn phí, Động Đất; bán tài sản khi thiếu tiền.
+ * Các lựa chọn làm trực tiếp trên bàn cờ 3D: chọn ô cho Lễ Hội, nhà miễn phí, Động Đất. Bán tài sản khi thiếu tiền: bảng danh sách.
  * Bảng gợi ý nằm phía trên, ô chọn được sáng lên trên bàn cờ; bấm ô là gửi action.
  */
-import { useMemo, useState } from 'react'
-import { BOARD } from '../../config/board'
-import { formatMoney, getTimeoutAction, sellValue, type GameAction, type GameState } from '../../game-core'
+import { useMemo } from 'react'
+import { BOARD, COLOR_GROUPS, RESORT_COLOR } from '../../config/board'
+import { sellValue, type GameAction, type GameState } from '../../game-core'
 import { useGameStore } from '../../store/gameStore'
+import { autoSellPlan } from '../../store/match'
 import type { BoardPick } from '../../store/uiStore'
 import { act } from '../act'
 import { Modal, Money } from '../kit'
@@ -59,52 +60,73 @@ export function TilePickPrompt({
 }
 
 /** Thiếu tiền: chọn ô trên bàn cờ để bán (hiện giá bán trên từng ô), hoặc bán tự động. */
+const LEVEL_LABEL = ['Đất trống', '1 nhà', '2 nhà', '3 nhà', 'Landmark']
+
+/**
+ * Thiếu tiền: bảng danh sách tài sản, bấm "Bán" ở từng ô (không phải chọn trên bàn cờ).
+ * Mỗi lần chỉ gửi một lệnh, chờ server trả lời mới bấm tiếp được (tránh bán trùng khi chơi online).
+ */
 export function SellPanel({ game, tiles, due }: { game: GameState; tiles: number[]; due: number }) {
   const me = game.players[game.currentPlayerIndex]
-  const [selected, setSelected] = useState<number | null>(null)
-  const chosen = selected !== null && tiles.includes(selected) ? selected : null
-  const labels = useMemo(() => Object.fromEntries(tiles.map((i) => [i, formatMoney(sellValue(game, i))])), [game, tiles])
-  const pick = useMemo<BoardPick>(
-    () => ({ tiles, onPick: setSelected, labels, selected: chosen, tone: 'bad' }),
-    [tiles, labels, chosen],
+  const awaiting = useGameStore((s) => s.awaitingServer)
+  const short = Math.max(0, due - me.money)
+  const rows = useMemo(
+    () =>
+      tiles
+        .map((i) => ({ i, value: sellValue(game, i), level: game.tiles[i].level, kind: BOARD[i].kind }))
+        .sort((a, b) => a.value - b.value),
+    [game, tiles],
   )
-  useBoardPick(pick)
-
   const autoSell = () => {
-    // Mỗi bước dùng đúng lựa chọn mặc định của game-core (bán ô rẻ nhất) cho tới khi hết nợ.
-    for (let guard = 0; guard < 40; guard++) {
-      const state = useGameStore.getState().game
-      if (!state || state.turn.pending?.type !== 'DEBT') return
-      const action = getTimeoutAction(state)
-      if (!action || action.type !== 'SELL') return
-      act(action)
-    }
+    const plan = autoSellPlan(game)
+    if (plan.length > 0) act(...plan)
   }
 
   return (
-    <HintPanel title="Bán tài sản" tone="pink">
-      <div className="text-[1.05rem] font-semibold text-stone-600">Chọn một ô của bạn trên bàn cờ để bán cho ngân hàng</div>
-      <div className="flex gap-[1.2rem] text-[1.05rem]">
+    <Modal title="Bán tài sản trả nợ" ribbon="#f2437a" className="w-[30rem]">
+      <div className="mb-[0.6rem] flex justify-center gap-[1.2rem] text-[1.05rem]">
         <span className="text-stone-500">
           Cần trả: <Money amount={due} className="font-extrabold text-ink" />
         </span>
         <span className="text-stone-500">
-          Còn thiếu: <Money amount={Math.max(0, due - me.money)} className="font-extrabold text-rose-500" />
+          Tiền mặt: <Money amount={me.money} className="font-extrabold text-ink" />
+        </span>
+        <span className="text-stone-500">
+          Còn thiếu: <Money amount={short} className="font-extrabold text-rose-500" />
         </span>
       </div>
-      <div className="flex gap-[0.7rem]">
-        <button className="btn-3d btn-blue px-[1.2rem] py-[0.35rem] text-[1.05rem]" onClick={autoSell}>
-          Bán tự động
-        </button>
-        <button
-          className="btn-3d btn-pink px-[1.4rem] py-[0.35rem] text-[1.05rem]"
-          disabled={chosen === null}
-          onClick={() => chosen !== null && act({ type: 'SELL', playerId: me.id, tileIndex: chosen })}
-        >
-          {chosen === null ? 'Bán' : `Bán ${BOARD[chosen].name} · ${formatMoney(sellValue(game, chosen))}`}
+      <p className="mb-[0.5rem] text-center text-[0.95rem] text-stone-500">Bán cả ô (đất + nhà) cho ngân hàng. Đủ tiền thì tự trả nợ.</p>
+      <ul className="flex max-h-[min(18rem,46vh)] flex-col gap-[0.35rem] overflow-y-auto pr-[0.2rem]">
+        {rows.map(({ i, value, level, kind }) => {
+          const color = BOARD[i].group ? COLOR_GROUPS.find((g) => g.id === BOARD[i].group)?.color : RESORT_COLOR
+          const enough = me.money + value >= due
+          return (
+            <li key={i} className="flex items-center gap-[0.6rem] rounded-xl bg-white px-[0.7rem] py-[0.4rem] shadow-sm">
+              <span className="h-[1.1rem] w-[1.1rem] shrink-0 rounded-full border-2 border-white shadow" style={{ background: color }} />
+              <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <b className="truncate text-[1.05rem] text-ink">{BOARD[i].name}</b>
+                <span className="text-[0.85rem] text-stone-400">{kind === 'RESORT' ? 'Khu Du Lịch' : LEVEL_LABEL[level]}</span>
+              </span>
+              <span className="text-[1.05rem] font-extrabold text-emerald-600">
+                +<Money amount={value} />
+              </span>
+              <button
+                className={`btn-3d ${enough ? 'btn-green' : 'btn-pink'} px-[0.9rem] py-[0.25rem] text-[1rem]`}
+                disabled={awaiting}
+                onClick={() => act({ type: 'SELL', playerId: me.id, tileIndex: i })}
+              >
+                Bán
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      <div className="mt-[0.8rem] flex justify-center">
+        <button className="btn-3d btn-blue px-[1.4rem] py-[0.4rem] text-[1.05rem]" disabled={awaiting} onClick={autoSell}>
+          Bán tự động (ô rẻ nhất trước)
         </button>
       </div>
-    </HintPanel>
+    </Modal>
   )
 }
 

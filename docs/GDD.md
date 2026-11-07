@@ -37,7 +37,7 @@
 | --- | --- |
 | Xuất Phát | Mỗi lần đi qua nhận +200. Dừng đúng ô này được xây thêm 1 nhà miễn phí lên một đất bất kỳ của mình |
 | Đảo Hoang | Bị kẹt tối đa 3 lượt. Thoát ra bằng cách tung được đôi, trả 100, hoặc dùng thẻ "Ra Đảo" |
-| Lễ Hội | Chọn một thành phố của mình, tiền thuê thành phố đó x2 cho đến khi có người tổ chức lễ hội ở chỗ khác |
+| Lễ Hội | Chọn một thành phố của mình, tiền thuê thành phố đó x2 cho đến khi có người tổ chức lễ hội ở chỗ khác; mỗi lần tổ chức sau trong ván hệ số tăng thêm (x3, x4, tối đa x5) |
 | Sân Bay | Lượt sau được bay tới bất kỳ ô nào (tốn 100) |
 
 ### 28 ô còn lại
@@ -127,7 +127,7 @@ Khi dừng trên đất của đối thủ, sau khi trả tiền thuê, người
 
 ### Thiếu tiền
 
-Bắt buộc bán nhà hoặc đất cho ngân hàng với giá 50% giá trị. Bán hết mà vẫn không đủ thì phá sản.
+Bắt buộc bán nhà hoặc đất cho ngân hàng với giá 70% giá trị. Bán hết mà vẫn không đủ thì phá sản.
 
 ## 5. Điều kiện thắng
 

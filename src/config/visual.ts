@@ -118,7 +118,8 @@ export const VISUAL = {
     burstRadius: 0.48,
     /** Chu kỳ một chùm pháo hoa (giây). */
     burstPeriod: 2.2,
-    signText: 'LỄ HỘI x2',
+    /** Chữ trên bảng nổi; hệ số tiền thuê hiện tại được ghép vào sau (vd. "LỄ HỘI x3"). */
+    signText: 'LỄ HỘI',
     signHeight: 1.75,
     signFontSize: 0.3,
     signColor: '#ff3d7f',

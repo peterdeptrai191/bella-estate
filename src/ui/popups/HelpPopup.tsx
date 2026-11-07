@@ -97,7 +97,7 @@ export function HelpPopup() {
               lên Landmark. Không mua thì ô vẫn trống.
             </Item>
             <Item icon="💸" title="Trả tiền thuê">
-              Dừng trên đất đối thủ thì trả tiền thuê. Trọn nhóm màu: tiền thuê x{E.colorGroupRentMultiplier}.
+              Dừng trên đất đối thủ thì trả tiền thuê. Trọn bộ màu: tiền thuê mọi ô trong nhóm x{E.colorGroupRentMultiplier}.
             </Item>
             <Item icon="🤝" title="Mua lại đất đối thủ">
               Trả thuê xong được mua lại ô đó với giá x{E.buyoutMultiplier} tổng giá trị đã đầu tư, tiền trả cho chủ cũ. Landmark và Khu Du Lịch không bị mua lại.
@@ -119,7 +119,7 @@ export function HelpPopup() {
               Kẹt tối đa {E.island.maxTurns} lượt. Thoát bằng tung đôi, trả {money(E.island.escapeFee)} hoặc thẻ Ra Đảo.
             </Item>
             <Item icon="🎉" title="Lễ Hội">
-              Chọn một thành phố của mình: tiền thuê x{E.festivalRentMultiplier} tới khi có lễ hội ở chỗ khác.
+              Chọn một thành phố của mình để tổ chức Lễ Hội. Lần đầu tiền thuê x{E.festivalRentMultiplier}, mỗi lần tổ chức sau tăng thêm x{E.festivalRentStep} (tối đa x{E.festivalRentMax}).
             </Item>
             <Item icon="✈️" title="Sân Bay">
               Lượt sau bay tới ô bất kỳ (tốn {money(E.airport.flightFee)}).

@@ -157,6 +157,19 @@ describe('Tiền thuê và mua lại', () => {
 })
 
 describe('Lễ Hội', () => {
+  it('mỗi lần tổ chức sau tiền thuê Lễ Hội tăng thêm (x2 rồi x3)', () => {
+    const s = own(newGame(), 'p1', [B3, P3], 1)
+    const first = act(arrive(s, FESTIVAL_INDEX).state, { type: 'HOST_FESTIVAL', tileIndex: B3 })
+    expect(first.state.festivalCount).toBe(1)
+    expect(eventsOf(first.events, 'FESTIVAL_HOSTED')[0]).toMatchObject({ count: 1, multiplier: 2 })
+    const again = patch(first.state, (x) => {
+      x.currentPlayerIndex = 0
+      x.turn = { ...x.turn, step: 'ROLL', dice: null }
+    })
+    const second = act(arrive(again, FESTIVAL_INDEX).state, { type: 'HOST_FESTIVAL', tileIndex: P3 })
+    expect(eventsOf(second.events, 'FESTIVAL_HOSTED')[0]).toMatchObject({ count: 2, multiplier: 3, previousTile: B3 })
+  })
+
   it('dừng ở Lễ Hội: chọn thành phố của mình, tiền thuê x2', () => {
     const s = own(newGame(), 'p1', [B3], 1)
     const { state } = arrive(s, FESTIVAL_INDEX)

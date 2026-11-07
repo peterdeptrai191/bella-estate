@@ -67,12 +67,17 @@ export const ECONOMY = {
 
   /** Sở hữu trọn nhóm màu: tiền thuê x hệ số này. */
   colorGroupRentMultiplier: 2,
-  /** Thành phố đang tổ chức Lễ Hội: tiền thuê x hệ số này. */
+  /**
+   * Lễ Hội: lần tổ chức đầu tiên trong ván tiền thuê x2, mỗi lần tổ chức sau (ở bất kỳ đâu) hệ số tăng thêm
+   * `festivalRentStep`, tối đa `festivalRentMax`.
+   */
   festivalRentMultiplier: 2,
+  festivalRentStep: 1,
+  festivalRentMax: 5,
   /** Giá mua lại = hệ số này x tổng giá trị đã đầu tư. */
   buyoutMultiplier: 2,
   /** Bán cho ngân hàng được tỷ lệ này trên giá trị đã đầu tư. */
-  bankSellRatio: 0.5,
+  bankSellRatio: 0.7,
 
   cards: {
     /** Thẻ Giảm Giá: lần trả tiền thuê tiếp theo nhân hệ số này. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildCost, createGame, landPrice, type GameState } from '../game-core'
-import { levelOptions } from './match'
+import { applyAction, buildCost, createGame, landPrice, type GameState } from '../game-core'
+import { autoSellPlan, levelOptions } from './match'
 
 function game(seed = 1): GameState {
   return createGame(
@@ -39,4 +39,20 @@ describe('Xem trước lựa chọn mua/xây', () => {
     expect(levelOptions(s, 6, true).map((o) => o.level)).toEqual([0, 1])
   })
 
+
+  it('bán tự động: dãy lệnh bán dừng đúng lúc hết nợ (không bán thừa, không lệnh trùng)', () => {
+    let s = game()
+    const tiles = s.tiles.map((_, i) => i).filter((i) => i === 1 || i === 2 || i === 4)
+    s = structuredClone(s)
+    for (const i of tiles) s.tiles[i] = { owner: s.players[0].id, level: 1 }
+    s.players[0].money = 0
+    s.turn = { ...s.turn, step: 'ACT', pending: { type: 'DEBT', reason: 'TAX', payments: [{ to: null, amount: 60 }], tileIndex: null, discounted: false } }
+    const plan = autoSellPlan(s)
+    expect(plan.length).toBeGreaterThan(0)
+    expect(new Set(plan.map((a) => (a.type === 'SELL' ? a.tileIndex : -1))).size).toBe(plan.length)
+    let after = s
+    for (const a of plan) after = applyAction(after, a).state
+    expect(after.turn.pending).toBeNull()
+    expect(after.players[0].money).toBeGreaterThanOrEqual(0)
+  })
 })

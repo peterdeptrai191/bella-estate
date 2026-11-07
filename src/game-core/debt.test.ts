@@ -7,7 +7,7 @@ const [, , B3] = groupTiles('brown') // P = 60
 const [R1] = groupTiles('red') // P = 220
 const [Y1] = groupTiles('yellow') // P = 260
 
-describe('Thiếu tiền: bắt buộc bán tài sản 50%', () => {
+describe('Thiếu tiền: bắt buộc bán tài sản 70%', () => {
   // p2 có Đỏ 3 nhà: tiền thuê 2P = 440. p1 chỉ có 100 tiền mặt.
   const setup = () =>
     setMoney(own(own(own(newGame(), 'p2', [R1], 3), 'p1', [Y1], 3), 'p1', [B3], 3), 'p1', 100)
@@ -20,17 +20,18 @@ describe('Thiếu tiền: bắt buộc bán tài sản 50%', () => {
     expect(() => act(debt, { type: 'END_TURN' })).toThrow(GameRuleError)
   })
 
-  it('bán cho ngân hàng được 50% giá trị; đủ tiền thì tự trả nợ', () => {
+  it('bán cho ngân hàng được 70% giá trị; đủ tiền thì tự trả nợ', () => {
     const debt = act(arrive(setup(), R1).state, { type: 'PAY_RENT' }).state
-    const sold1 = act(debt, { type: 'SELL', tileIndex: Y1 })
-    expect(eventsOf(sold1.events, 'PROPERTY_SOLD')[0].amount).toBe(325) // (260 + 3x130) / 2
-    expect(sold1.state.tiles[Y1]).toEqual({ owner: null, level: 0 })
+    const sold1 = act(debt, { type: 'SELL', tileIndex: B3 })
+    expect(eventsOf(sold1.events, 'PROPERTY_SOLD')[0].amount).toBe(105) // (60 + 3x30) x 0,7
+    expect(sold1.state.tiles[B3]).toEqual({ owner: null, level: 0 })
     expect(sold1.state.turn.pending?.type).toBe('DEBT')
 
-    const sold2 = act(sold1.state, { type: 'SELL', tileIndex: B3 })
+    const sold2 = act(sold1.state, { type: 'SELL', tileIndex: Y1 })
+    expect(eventsOf(sold2.events, 'PROPERTY_SOLD')[0].amount).toBe(455) // (260 + 3x130) x 0,7
     expect(sold2.state.turn.pending).toBeNull()
     expect(eventsOf(sold2.events, 'RENT_PAID')[0].amount).toBe(440)
-    expect(player(sold2.state, 'p1').money).toBe(100 + 325 + 75 - 440)
+    expect(player(sold2.state, 'p1').money).toBe(100 + 105 + 455 - 440)
     expect(player(sold2.state, 'p2').money).toBe(1500 + 440)
     expect(() => act(sold2.state, { type: 'END_TURN' })).not.toThrow()
   })
@@ -48,7 +49,7 @@ describe('Phá sản', () => {
     const { state: next, events } = act(state, { type: 'PAY_RENT' })
     expect(player(next, 'p1').bankrupt).toBe(true)
     expect(player(next, 'p1').money).toBe(0)
-    expect(player(next, 'p2').money).toBe(1500 + 10 + 30)
+    expect(player(next, 'p2').money).toBe(1500 + 10 + 42) // tiền mặt + đất trống 60 x 0,7
     expect(next.tiles[B3]).toEqual({ owner: null, level: 0 })
     expect(eventsOf(events, 'BANKRUPT')[0]).toMatchObject({ playerId: 'p1', releasedTiles: [B3] })
     // Lượt chuyển cho người kế tiếp, ván vẫn tiếp tục với 2 người.

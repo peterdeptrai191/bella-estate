@@ -5,7 +5,7 @@ import { CITY_INDICES, LANDMARK_LEVEL, RESORT_INDICES, groupTiles, tileDef } fro
 import type { GameState, PlayerId, Standing } from './types'
 
 /** Phần state đủ để tính tiền thuê — UI dùng được với view đang hiển thị. */
-export type Ownership = Pick<GameState, 'tiles' | 'festivalTile'>
+export type Ownership = Pick<GameState, 'tiles' | 'festivalTile'> & { festivalCount?: number }
 
 export function landPrice(i: number): number {
   const price = tileDef(i).price
@@ -32,7 +32,8 @@ export function investedValue(s: Ownership, i: number): number {
 
 /** Giá bán cho ngân hàng (50% giá trị đầu tư). */
 export function sellValue(s: Ownership, i: number): number {
-  return Math.floor(investedValue(s, i) * ECONOMY.bankSellRatio)
+  // +1e-9: tránh lỗi số thực (650 × 0,7 = 454,999…).
+  return Math.floor(investedValue(s, i) * ECONOMY.bankSellRatio + 1e-9)
 }
 
 /** Giá mua lại (2x giá trị đầu tư). */
@@ -56,6 +57,12 @@ export function resortCount(s: Ownership, playerId: PlayerId): number {
   return RESORT_INDICES.filter((i) => s.tiles[i].owner === playerId).length
 }
 
+/** Hệ số tiền thuê của Lễ Hội thứ `count` trong ván: x2, x3, x4… tới tối đa. */
+export function festivalMultiplier(count: number): number {
+  const n = Math.max(1, count)
+  return Math.min(ECONOMY.festivalRentMax, ECONOMY.festivalRentMultiplier + ECONOMY.festivalRentStep * (n - 1))
+}
+
 /** Tiền thuê hiện tại khi dừng ở ô `i` (chưa tính thẻ Giảm Giá). */
 export function rentFor(s: Ownership, i: number): number {
   const tile = s.tiles[i]
@@ -64,7 +71,8 @@ export function rentFor(s: Ownership, i: number): number {
   if (def.kind === 'RESORT') return ECONOMY.resort.rentByCount[resortCount(s, tile.owner)]
   let rent = Math.round(landPrice(i) * ECONOMY.city.rentRatio[tile.level])
   if (def.group && ownsWholeGroup(s, tile.owner, def.group)) rent *= ECONOMY.colorGroupRentMultiplier
-  if (s.festivalTile === i) rent *= ECONOMY.festivalRentMultiplier
+  // Ván cũ chưa có festivalCount: coi như Lễ Hội đầu tiên.
+  if (s.festivalTile === i) rent *= festivalMultiplier(s.festivalCount || 1)
   return rent
 }
 

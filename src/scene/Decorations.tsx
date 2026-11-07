@@ -8,6 +8,7 @@ import { Billboard, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import type { Group, Mesh, MeshBasicMaterial } from 'three'
+import { festivalMultiplier } from '../game-core'
 import { useAnimationStore } from '../store/animationStore'
 import { useVisual } from '../store/visualStore'
 import { computeTileLayout } from './boardLayout'
@@ -133,6 +134,7 @@ export function FestivalCelebration() {
   const { board, decor } = visual
   const layout = useMemo(() => computeTileLayout(board), [board])
   const festivalTile = useAnimationStore((s) => s.view?.festivalTile ?? null)
+  const festivalCount = useAnimationStore((s) => s.view?.festivalCount ?? 0)
   const balloons = useRef<Group>(null)
   const confetti = useRef<Group>(null)
   const fireworks = useRef<Group>(null)
@@ -266,7 +268,7 @@ export function FestivalCelebration() {
           </group>
         ))}
       </group>
-      {/* Bảng "LỄ HỘI x2" lơ lửng, luôn quay về phía camera */}
+      {/* Bảng "LỄ HỘI x2/x3…" lơ lửng, luôn quay về phía camera */}
       <group ref={sign} position={[0, decor.signHeight, 0]}>
         <Billboard>
           <Text
@@ -281,7 +283,7 @@ export function FestivalCelebration() {
             characters={TEXT_CHARACTERS}
             raycast={() => null}
           >
-            {decor.signText}
+            {`${decor.signText} x${festivalMultiplier(festivalCount || 1)}`}
           </Text>
         </Billboard>
       </group>

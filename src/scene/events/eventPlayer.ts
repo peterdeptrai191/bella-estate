@@ -174,7 +174,7 @@ export async function playEvent(event: GameEvent): Promise<void> {
       return
     case 'FESTIVAL_HOSTED':
       playSound('festival')
-      banner(`Lễ Hội ở ${BOARD[event.tileIndex].name}!`, 'good')
+      banner(`Lễ Hội ở ${BOARD[event.tileIndex].name}! Tiền thuê x${event.multiplier}`, 'good')
       apply(event)
       await wait(a.cardPause / 2)
       return

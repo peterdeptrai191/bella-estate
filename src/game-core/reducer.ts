@@ -10,7 +10,7 @@ import { afterRent, charge, settleDebtIfPossible } from './money'
 import { houseCap, landOn, moveTo, sendToIsland, walk } from './movement'
 import { advanceTurn, freshTurn } from './turn'
 import type { ActionResult, GameAction, GameState, HoldableCardId } from './types'
-import { buildCost, buyoutPrice, sellValue } from './valuation'
+import { buildCost, buyoutPrice, festivalMultiplier, sellValue } from './valuation'
 import { checkWin } from './win'
 
 export function applyAction(state: GameState, action: GameAction): ActionResult {
@@ -291,8 +291,9 @@ function hostFestival(ctx: Ctx, tileIndex: number): void {
   ensure(tileDef(tileIndex).kind === 'CITY' && s.tiles[tileIndex].owner === player.id, 'Chọn một thành phố của mình')
   const previousTile = s.festivalTile
   s.festivalTile = tileIndex
+  s.festivalCount = (s.festivalCount || 0) + 1
   s.turn.festivalChoice = false
-  emit(ctx, { type: 'FESTIVAL_HOSTED', playerId: player.id, tileIndex, previousTile })
+  emit(ctx, { type: 'FESTIVAL_HOSTED', playerId: player.id, tileIndex, previousTile, count: s.festivalCount, multiplier: festivalMultiplier(s.festivalCount) })
 }
 
 function fly(ctx: Ctx, tileIndex: number): void {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { groupTiles, RESORT_INDICES } from './board'
 import { newGame, own, patch } from './testHelpers'
-import { buyoutPrice, housesOwned, investedValue, netWorth, rentFor, sellValue } from './valuation'
+import { buyoutPrice, festivalMultiplier, housesOwned, investedValue, netWorth, rentFor, sellValue } from './valuation'
 
 const [B1, B2, B3] = groupTiles('brown') // P = 60
 
@@ -39,15 +39,30 @@ describe('Giá trị tài sản', () => {
     expect(investedValue(own(newGame(), 'p1', [RESORT_INDICES[0]]), RESORT_INDICES[0])).toBe(200)
   })
 
-  it('mua lại = 2x giá trị đầu tư; bán ngân hàng = 50%', () => {
+  it('mua lại = 2x giá trị đầu tư; bán ngân hàng = 70%', () => {
     const s = own(newGame(), 'p1', [B3], 2)
     expect(buyoutPrice(s, B3)).toBe(240)
-    expect(sellValue(s, B3)).toBe(60)
+    expect(sellValue(s, B3)).toBe(84)
   })
 
   it('tổng tài sản = tiền mặt + giá trị đầu tư; Landmark tính như 3 nhà khi đếm nhà', () => {
     const s = own(own(newGame(), 'p1', [B3], 4), 'p1', [B1], 2)
     expect(netWorth(s, 'p1')).toBe(1500 + 210 + 120)
     expect(housesOwned(s, 'p1')).toBe(5)
+  })
+
+  it('Lễ Hội: lần đầu x2, mỗi lần tổ chức sau tăng thêm, tối đa x5', () => {
+    expect([1, 2, 3, 4, 5, 9].map(festivalMultiplier)).toEqual([2, 3, 4, 5, 5, 5])
+    const base = own(newGame(), 'p1', [B3], 1)
+    const rent = rentFor(base, B3)
+    expect(rentFor({ ...base, festivalTile: B3, festivalCount: 1 }, B3)).toBe(rent * 2)
+    expect(rentFor({ ...base, festivalTile: B3, festivalCount: 3 }, B3)).toBe(rent * 4)
+  })
+
+  it('trọn bộ màu: tiền thuê mọi ô trong nhóm x2', () => {
+    const brown = groupTiles('brown')
+    const two = own(newGame(), 'p1', brown.slice(0, 2), 1)
+    const all = own(two, 'p1', [brown[2]], 0)
+    expect(rentFor(all, brown[0])).toBe(rentFor(two, brown[0]) * 2)
   })
 })

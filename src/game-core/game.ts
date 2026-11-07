@@ -51,6 +51,7 @@ export function createGame(players: NewPlayer[], seed: number | string, options:
     round: 1,
     maxRounds: normalizeMaxRounds(options.maxRounds),
     festivalTile: null,
+    festivalCount: 0,
     rngState: seedToRngState(seed),
     turn: freshTurn(),
     winner: null,

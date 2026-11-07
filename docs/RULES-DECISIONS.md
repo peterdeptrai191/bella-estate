@@ -9,12 +9,12 @@ Những điểm GDD chưa nói rõ, đã được chọn khi viết `src/game-co
 | 3 | Landmark | Ô phải có đủ 3 nhà **từ trước lần dừng này** (`TurnState.arrivalLevel`): vừa xây đủ 3 nhà hoặc vừa mua/mua lại ô thì chờ lần dừng sau. Không mua thẳng Landmark ở lần mua. | `property.test.ts` |
 | 4 | Đảo Hoang | Dừng ở ô Đảo Hoang = bị kẹt (như bị đưa ra đảo). Sau 3 lần tung trượt thì lượt sau tự do. Thoát bằng đôi thì đi luôn nhưng **không** được tung thêm. | `island.test.ts` |
 | 5 | Sân Bay | Lượt sau được chọn: bay (100) tới ô bất kỳ trừ Sân Bay, hoặc tung bình thường (mất vé). Dừng ở Sân Bay bằng đôi thì mất lượt tung thêm. Bay qua Xuất Phát vẫn +200. | `property.test.ts` |
-| 6 | Lễ Hội | Tùy chọn, chỉ khi có ít nhất 1 thành phố. Lễ Hội đi theo ô khi ô bị mua lại; mất khi ô bị bán cho ngân hàng. | `property.test.ts` |
+| 6 | Lễ Hội | Tùy chọn, chỉ khi có ít nhất 1 thành phố. Hệ số tiền thuê tăng theo số lần tổ chức trong ván (ở bất kỳ đâu): lần 1 x2, lần 2 x3, lần 3 x4, tối đa x5 (`festivalRentMultiplier/Step/Max`, `GameState.festivalCount`). Lễ Hội đi theo ô khi ô bị mua lại; mất khi ô bị bán cho ngân hàng. | `property.test.ts` |
 | 7 | Mua lại | Trả thuê trước, rồi được mua lại với giá 2 × giá trị đã đầu tư (đất + nhà), tiền trả cho chủ cũ. **Không** áp dụng cho Landmark và Khu Du Lịch. Được mua lại cả khi dùng Lá Chắn miễn tiền thuê. | `property.test.ts`, `cards.test.ts` |
 | 8 | Tổng tài sản | = tiền mặt + toàn bộ giá trị đã đầu tư (đất + nhà, giá gốc). Dùng cho ô Thuế (10%, làm tròn xuống) và xếp hạng khi hết vòng. | `valuation.test.ts` |
 | 9 | Thuế Bất Ngờ | Landmark tính là 3 nhà. | `cards.test.ts` |
-| 10 | Bán tài sản | Chỉ được bán khi đang thiếu tiền. Bán **nguyên ô** (đất + nhà) lấy 50% giá trị đầu tư, chưa có bán lẻ từng nhà. Đủ tiền thì tự trả nợ. | `debt.test.ts` |
-| 11 | Phá sản | Toàn bộ tài sản bán cho ngân hàng 50%, chủ nợ nhận phần trả được, đất trả về ngân hàng (không chuyển cho chủ nợ). | `debt.test.ts` |
+| 10 | Bán tài sản | Chỉ được bán khi đang thiếu tiền. Bán **nguyên ô** (đất + nhà) lấy 70% giá trị đầu tư (`ECONOMY.bankSellRatio`, trước là 50%), chưa có bán lẻ từng nhà. Đủ tiền thì tự trả nợ. | `debt.test.ts` |
+| 11 | Phá sản | Toàn bộ tài sản bán cho ngân hàng 70%, chủ nợ nhận phần trả được, đất trả về ngân hàng (không chuyển cho chủ nợ). | `debt.test.ts` |
 | 12 | Nhà miễn phí ở Xuất Phát | Chỉ +1 nhà (không lên Landmark). Áp dụng cả khi tới bằng thẻ "Về Xuất Phát". | `turn.test.ts`, `cards.test.ts` |
 | 13 | Rút thẻ | Mỗi lần rút chọn ngẫu nhiên đều trong 10 loại (không dùng chồng bài). | `cards.test.ts` |
 | 14 | Dùng thẻ | "Ra Đảo" và "Lá Chắn" người chơi chủ động dùng (`USE_CARD`). "Giảm Giá" tự áp vào lần trả thuê kế tiếp. | `cards.test.ts` |

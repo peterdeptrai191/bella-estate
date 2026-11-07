@@ -2,7 +2,7 @@
  * Xem trước các lựa chọn cho popup (mua đất kèm nhà, xây tới cấp nào…) bằng cách thử chính reducer.
  * Không có luật chơi mới ở đây. (`humanPrompt` / `autoAction` nằm ở game-core/flow.ts.)
  */
-import { applyAction, currentPlayer, GameRuleError, isLegal, type GameAction, type GameState } from '../game-core'
+import { applyAction, currentPlayer, GameRuleError, getTimeoutAction, isLegal, type GameAction, type GameState } from '../game-core'
 
 export interface LevelOption {
   /** Cấp sau khi xây (0 = chỉ đất, 1–3 nhà, 4 = Landmark). */
@@ -58,4 +58,20 @@ export function previewAfter(state: GameState, actions: GameAction[]): GameState
     if (error instanceof GameRuleError) return null
     throw error
   }
+}
+
+/**
+ * Bán tự động khi thiếu tiền: dãy action SELL theo đúng lựa chọn mặc định của game-core (bán ô rẻ nhất trước)
+ * cho tới khi hết nợ. Thử trên bản sao state nên gửi được một lần (online: một yêu cầu, không bán trùng).
+ */
+export function autoSellPlan(state: GameState): GameAction[] {
+  const plan: GameAction[] = []
+  let current = state
+  for (let guard = 0; guard < 40 && current.turn.pending?.type === 'DEBT'; guard++) {
+    const action = getTimeoutAction(current)
+    if (!action || action.type !== 'SELL') break
+    plan.push(action)
+    current = applyAction(current, action).state
+  }
+  return plan
 }

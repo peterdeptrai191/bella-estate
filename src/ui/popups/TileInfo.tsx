@@ -1,7 +1,7 @@
 /** Bấm vào ô bất kỳ: chủ sở hữu, cấp nhà, tiền thuê hiện tại (lấy theo view đang hiển thị). */
 import { BOARD, COLOR_GROUPS } from '../../config/board'
 import { ECONOMY } from '../../config/economy'
-import { buyoutPrice, formatMoney, LANDMARK_LEVEL, rentFor, type Ownership } from '../../game-core'
+import { buyoutPrice, formatMoney, LANDMARK_LEVEL, rentFor, type Ownership, festivalMultiplier, ownsWholeGroup } from '../../game-core'
 import { useAnimationStore } from '../../store/animationStore'
 import { useUiStore } from '../../store/uiStore'
 import { useVisual } from '../../store/visualStore'
@@ -39,7 +39,7 @@ export function TileInfo() {
   /** Tiền thuê cơ bản ở từng cấp (chưa tính nhóm màu / Lễ Hội), tính bằng chính hàm của game-core. */
   const rentAtLevel = (level: number) => {
     const tiles = view.tiles.map((_, i) => (i === selected ? { owner: '_', level } : { owner: null, level: 0 }))
-    return rentFor({ tiles, festivalTile: null }, selected)
+    return rentFor({ tiles, festivalTile: null, festivalCount: 0 }, selected)
   }
 
   return (
@@ -55,7 +55,12 @@ export function TileInfo() {
                   {ownerView ? ownerView.name : 'Chưa có chủ'}
                 </div>
                 {def.kind === 'CITY' && tile.owner && <div className="text-[1rem] text-stone-500">{LEVEL_NAMES[tile.level]}</div>}
-                {view.festivalTile === selected && <div className="text-[1rem] font-bold text-pink-500">🎉 Đang có Lễ Hội</div>}
+                {def.group && tile.owner && ownsWholeGroup(view, tile.owner, def.group) && (
+                  <div className="text-[1rem] font-bold text-emerald-600">🎨 Trọn bộ màu: tiền thuê x{ECONOMY.colorGroupRentMultiplier}</div>
+                )}
+                {view.festivalTile === selected && (
+                  <div className="text-[1rem] font-bold text-pink-500">🎉 Đang có Lễ Hội: tiền thuê x{festivalMultiplier(view.festivalCount || 1)}</div>
+                )}
               </div>
             </div>
           )}

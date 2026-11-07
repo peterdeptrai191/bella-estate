@@ -5,7 +5,7 @@
 import { useCallback, useMemo } from 'react'
 import { BOARD } from '../../config/board'
 import { ECONOMY } from '../../config/economy'
-import { formatMoney, humanPrompt, type GameState, type HumanPrompt } from '../../game-core'
+import { festivalMultiplier, formatMoney, humanPrompt, type GameState, type HumanPrompt } from '../../game-core'
 import { useIsAnimating } from '../../store/animationStore'
 import { useGameStore } from '../../store/gameStore'
 import { useUiStore } from '../../store/uiStore'
@@ -111,7 +111,7 @@ function PromptView({ game, prompt }: { game: GameState; prompt: HumanPrompt }) 
       return (
         <TilePickPrompt
           title="Lễ Hội"
-          hint="Bấm một thành phố của bạn để tổ chức Lễ Hội (tiền thuê x2)"
+          hint={`Bấm một thành phố của bạn để tổ chức Lễ Hội (tiền thuê x${festivalMultiplier((game.festivalCount || 0) + 1)})`}
           tiles={prompt.tiles}
           makeAction={festival}
           skip={endTurn}

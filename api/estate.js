@@ -59,12 +59,17 @@ var ECONOMY = {
   },
   /** Sở hữu trọn nhóm màu: tiền thuê x hệ số này. */
   colorGroupRentMultiplier: 2,
-  /** Thành phố đang tổ chức Lễ Hội: tiền thuê x hệ số này. */
+  /**
+   * Lễ Hội: lần tổ chức đầu tiên trong ván tiền thuê x2, mỗi lần tổ chức sau (ở bất kỳ đâu) hệ số tăng thêm
+   * `festivalRentStep`, tối đa `festivalRentMax`.
+   */
   festivalRentMultiplier: 2,
+  festivalRentStep: 1,
+  festivalRentMax: 5,
   /** Giá mua lại = hệ số này x tổng giá trị đã đầu tư. */
   buyoutMultiplier: 2,
   /** Bán cho ngân hàng được tỷ lệ này trên giá trị đã đầu tư. */
-  bankSellRatio: 0.5,
+  bankSellRatio: 0.7,
   cards: {
     /** Thẻ Giảm Giá: lần trả tiền thuê tiếp theo nhân hệ số này. */
     rentDiscountRatio: 0.5,
@@ -256,7 +261,7 @@ function investedValue(s, i) {
   return total;
 }
 function sellValue(s, i) {
-  return Math.floor(investedValue(s, i) * ECONOMY.bankSellRatio);
+  return Math.floor(investedValue(s, i) * ECONOMY.bankSellRatio + 1e-9);
 }
 function buyoutPrice(s, i) {
   return investedValue(s, i) * ECONOMY.buyoutMultiplier;
@@ -273,6 +278,10 @@ function completedGroups(s, playerId) {
 function resortCount(s, playerId) {
   return RESORT_INDICES.filter((i) => s.tiles[i].owner === playerId).length;
 }
+function festivalMultiplier(count) {
+  const n = Math.max(1, count);
+  return Math.min(ECONOMY.festivalRentMax, ECONOMY.festivalRentMultiplier + ECONOMY.festivalRentStep * (n - 1));
+}
 function rentFor(s, i) {
   const tile = s.tiles[i];
   if (!tile.owner) return 0;
@@ -280,7 +289,7 @@ function rentFor(s, i) {
   if (def.kind === "RESORT") return ECONOMY.resort.rentByCount[resortCount(s, tile.owner)];
   let rent = Math.round(landPrice(i) * ECONOMY.city.rentRatio[tile.level]);
   if (def.group && ownsWholeGroup(s, tile.owner, def.group)) rent *= ECONOMY.colorGroupRentMultiplier;
-  if (s.festivalTile === i) rent *= ECONOMY.festivalRentMultiplier;
+  if (s.festivalTile === i) rent *= festivalMultiplier(s.festivalCount || 1);
   return rent;
 }
 function housesOwned(s, playerId) {
@@ -380,6 +389,7 @@ function createGame(players, seed, options = {}) {
     round: 1,
     maxRounds: normalizeMaxRounds(options.maxRounds),
     festivalTile: null,
+    festivalCount: 0,
     rngState: seedToRngState(seed),
     turn: freshTurn(),
     winner: null,
@@ -904,8 +914,9 @@ function hostFestival(ctx, tileIndex) {
   ensure(tileDef(tileIndex).kind === "CITY" && s.tiles[tileIndex].owner === player.id, "Ch\u1ECDn m\u1ED9t th\xE0nh ph\u1ED1 c\u1EE7a m\xECnh");
   const previousTile = s.festivalTile;
   s.festivalTile = tileIndex;
+  s.festivalCount = (s.festivalCount || 0) + 1;
   s.turn.festivalChoice = false;
-  emit(ctx, { type: "FESTIVAL_HOSTED", playerId: player.id, tileIndex, previousTile });
+  emit(ctx, { type: "FESTIVAL_HOSTED", playerId: player.id, tileIndex, previousTile, count: s.festivalCount, multiplier: festivalMultiplier(s.festivalCount) });
 }
 function fly(ctx, tileIndex) {
   const s = ctx.s;
@@ -1599,7 +1610,8 @@ var VISUAL = {
     burstRadius: 0.48,
     /** Chu kỳ một chùm pháo hoa (giây). */
     burstPeriod: 2.2,
-    signText: "L\u1EC4 H\u1ED8I x2",
+    /** Chữ trên bảng nổi; hệ số tiền thuê hiện tại được ghép vào sau (vd. "LỄ HỘI x3"). */
+    signText: "L\u1EC4 H\u1ED8I",
     signHeight: 1.75,
     signFontSize: 0.3,
     signColor: "#ff3d7f",
