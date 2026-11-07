@@ -1664,9 +1664,22 @@ var VISUAL = {
     /** Khoảng cách từ mép ngoài ô vào trong (tỷ lệ chiều sâu ô): ô thường / ô góc. */
     edgeInset: 0.17,
     cornerEdgeInset: 0.1,
+    /** Ô mua được (kiểu Business Tour): tên IN HOA trên dải màu nhóm. */
+    nameFontSize: 0.15,
+    nameColor: "#ffffff",
+    nameOutlineColor: "#2d2a3e",
+    nameOutlineWidth: 0.16,
+    /** Số tiền to ở phần trắng phía ngoài ô: giá mua (chưa có chủ) hoặc tiền thuê (màu chủ). */
+    priceFontSize: 0.28,
+    priceOutlineWidth: 0.16,
+    ownedPriceColor: "#ffffff",
+    /** Khoảng cách từ mép ngoài ô tới số tiền (tỷ lệ chiều sâu ô). */
+    priceInset: 0.2,
     /** Luôn vẽ tên ô đè lên nhà/Landmark (không bị che khi đã xây). */
     alwaysOnTop: true,
-    renderOrder: 20
+    renderOrder: 20,
+    /** Độ phân giải mỗi chữ trong atlas SDF (32 = gọn atlas, vẫn nét ở cỡ chữ ô). */
+    sdfGlyphSize: 32
   },
   /** Nhãn tiền thuê trên các ô có chủ. */
   tags: {
