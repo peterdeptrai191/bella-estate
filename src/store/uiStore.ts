@@ -49,6 +49,14 @@ interface UiStore {
   turnTimeScale: number
   /** Người chơi đang zoom/kéo bàn cờ khỏi toàn cảnh (hiện nút "Toàn cảnh"). */
   viewZoomed: boolean
+  /** Kết quả xúc xắc vừa tung (hiện số nổi trên xúc xắc), xoá khi sang lượt mới. */
+  diceShown: { dice: [number, number]; total: number } | null
+  /** Ô quân cờ sẽ dừng sau khi tung (viền vàng), xoá khi sang lượt mới. */
+  targetTile: number | null
+  /** Toạ độ màn hình (px, trong khung canvas) của tâm bàn cờ — chỗ đặt nút Tung xúc xắc. */
+  boardCenter: { x: number; y: number } | null
+  /** Bảng luật chơi đang mở. */
+  helpOpen: boolean
   selectTile: (tileIndex: number | null) => void
   setPick: (pick: BoardPick | null) => void
   /** Bấm một ô trên bàn cờ: đang ở chế độ chọn thì chọn, không thì xem thông tin ô. */
@@ -74,6 +82,10 @@ export const useUiStore = create<UiStore>((set, get) => ({
   autoplayHuman: false,
   turnTimeScale: 1,
   viewZoomed: false,
+  diceShown: null,
+  targetTile: null,
+  boardCenter: null,
+  helpOpen: false,
   selectTile: (selectedTile) => set({ selectedTile }),
   setPick: (pick) => set({ pick }),
   clickTile: (tileIndex) => {

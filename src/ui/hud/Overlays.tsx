@@ -75,6 +75,14 @@ export function TopBar() {
           {muted ? '🔇' : '🔊'}
         </button>
         <FullscreenButton />
+        <button
+          aria-label="Luật chơi"
+          title="Luật chơi, cách thắng"
+          className="btn-3d btn-yellow flex h-[2.2rem] w-[2.2rem] items-center justify-center text-[1.25rem] font-extrabold"
+          onClick={() => useUiStore.setState({ helpOpen: true })}
+        >
+          ?
+        </button>
         {zoomed && (
           <button
             aria-label="Xem toàn cảnh bàn cờ"

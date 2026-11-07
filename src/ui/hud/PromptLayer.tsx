@@ -18,10 +18,10 @@ import { useBoardPick } from '../useBoardPick'
 function RollButton({ playerId, label = 'TUNG XÚC XẮC' }: { playerId: string; label?: string }) {
   return (
     <button
-      className="btn-3d btn-yellow flex items-center gap-[0.6rem] px-[2.6rem] py-[0.7rem] text-[1.8rem]"
+      className="btn-3d btn-yellow animate-pop-in flex items-center gap-[0.5rem] px-[1.6rem] py-[0.5rem] text-[1.4rem] portrait:px-[1rem] portrait:py-[0.35rem] portrait:text-[1.1rem]"
       onClick={() => act({ type: 'ROLL_DICE', playerId })}
     >
-      <span className="text-[1.9rem] leading-none">🎲</span>
+      <span className="text-[1.5rem] leading-none">🎲</span>
       {label}
     </button>
   )
@@ -35,6 +35,11 @@ function RollBar({ game, prompt }: { game: GameState; prompt: Extract<HumanPromp
     [prompt.flyTiles, fly],
   )
   useBoardPick(pick)
+  // Đặt nút ngay dưới xúc xắc ở giữa bàn cờ (theo camera); chưa đo được thì để giữa màn hình.
+  const center = useUiStore((s) => s.boardCenter)
+  const anchor = center
+    ? { left: `calc(${center.x}px - env(safe-area-inset-left, 0px))`, top: `calc(${center.y}px - env(safe-area-inset-top, 0px) + 2.4rem)` }
+    : { left: '50%', top: 'calc(50% + 2.4rem)' }
 
   return (
     <>
@@ -52,19 +57,19 @@ function RollBar({ game, prompt }: { game: GameState; prompt: Extract<HumanPromp
           </div>
         </HintPanel>
       )}
-      <div className="pointer-events-auto absolute bottom-[1.2rem] left-1/2 z-20 flex -translate-x-1/2 items-end gap-[0.8rem] whitespace-nowrap">
+      <div className="pointer-events-auto absolute z-20 flex -translate-x-1/2 flex-col items-center gap-[0.45rem] whitespace-nowrap" style={anchor}>
+        <RollButton playerId={me.id} label={prompt.onIsland ? 'TUNG (CẦN ĐÔI)' : 'TUNG XÚC XẮC'} />
         {prompt.canUseEscapeCard && (
           <button
-            className="btn-3d btn-green px-[1.2rem] py-[0.5rem] text-[1.15rem]"
+            className="btn-3d btn-green px-[1rem] py-[0.3rem] text-[1rem]"
             onClick={() => act({ type: 'USE_CARD', playerId: me.id, card: 'ESCAPE_ISLAND' })}
           >
             🏝️ Dùng thẻ Ra Đảo
           </button>
         )}
-        <RollButton playerId={me.id} label={prompt.onIsland ? 'TUNG (CẦN ĐÔI)' : 'TUNG XÚC XẮC'} />
         {prompt.canPayIslandFee && (
           <button
-            className="btn-3d btn-blue px-[1.2rem] py-[0.5rem] text-[1.15rem]"
+            className="btn-3d btn-blue px-[1rem] py-[0.3rem] text-[1rem]"
             onClick={() => act({ type: 'PAY_ISLAND_FEE', playerId: me.id })}
           >
             Trả {formatMoney(ECONOMY.island.escapeFee)} thoát đảo

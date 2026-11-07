@@ -18,13 +18,13 @@ export const VISUAL = {
     /** Góc xoay quanh bàn cờ (độ). 45 = nhìn chéo, ô Xuất Phát ở dưới cùng. */
     azimuthDeg: 45,
     /** Khoảng trống quanh bàn cờ khi tự co cho vừa khung (1 = sát mép). */
-    fitPadding: 1.12,
+    fitPadding: 1.03,
     /** Lề khi màn hình nhỏ (điện thoại): bàn cờ to hơn, HUD nằm ở 4 góc nên không che. */
-    fitPaddingCompact: 1.0,
+    fitPaddingCompact: 1,
     /** Cạnh ngắn của khung (px) dưới mức này thì coi là màn hình nhỏ (điện thoại ngang hoặc dọc). */
     compactHeight: 520,
     /** Phần chiều cao nhà/Landmark được chừa khi co khung (1 = chừa đủ, 0 = bỏ qua). */
-    fitHeadroom: 0.5,
+    fitHeadroom: 0.3,
     /** Người chơi được phóng to tối đa bao nhiêu lần (chụm 2 ngón / lăn chuột). */
     userZoomMax: 3,
     /** Tốc độ zoom khi lăn chuột. */
@@ -253,6 +253,21 @@ export const VISUAL = {
     pipRatio: 0.1,
     /** Khoảng cách giữa hai viên. */
     spacing: 0.8,
+    /** Số điểm vừa tung nổi cao bao nhiêu trên xúc xắc (bội số cạnh xúc xắc). */
+    totalLift: 2.2,
+  },
+
+  /** Viền vàng quanh ô quân cờ sẽ dừng sau khi tung. */
+  target: {
+    color: '#ffc928',
+    /** Bề rộng viền và độ cao thanh viền. */
+    thickness: 0.07,
+    height: 0.05,
+    /** Nâng viền khỏi mặt ô. */
+    lift: 0.02,
+    opacityMin: 0.55,
+    opacityMax: 1,
+    pulseSpeed: 5,
   },
 
   /** Cây trang trí trên bãi cỏ (Kenney City Kit Suburban, CC0). Giữ khoảng giữa trống cho xúc xắc. */

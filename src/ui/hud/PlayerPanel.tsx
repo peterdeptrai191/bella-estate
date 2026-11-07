@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { BOARD, COLOR_GROUPS, RESORT_COLOR } from '../../config/board'
+import { CARDS } from '../../config/cards'
 import { formatMoney } from '../../game-core'
+import { useAnimationStore } from '../../store/animationStore'
+import { useUiStore } from '../../store/uiStore'
 import type { PlayerView } from '../../store/boardView'
 import type { TurnDeadline } from '../../store/uiStore'
 import { useSeatSkin } from '../../store/gameStore'
@@ -9,11 +13,11 @@ import { useCountUp, useRemaining } from '../useCountUp'
 
 /** Vị trí 4 góc theo thứ tự ghế, chiều kim đồng hồ từ góc dưới trái (ghế 0 = người chơi trên máy). */
 const CORNERS = [
-  // Cầm dọc: hàng trên nằm dưới thanh Vòng/Thoát và dòng mô tả sự kiện, hàng dưới nằm trên nút Tung xúc xắc.
-  { box: 'left-[1rem] bottom-[1rem] portrait:bottom-[6.2rem]', right: false },
+  // Cầm dọc: hàng trên nằm dưới thanh Vòng/Thoát và dòng mô tả sự kiện, hàng dưới sát đáy (nút Tung nằm giữa bàn cờ).
+  { box: 'left-[1rem] bottom-[1rem] portrait:bottom-[1.5rem]', right: false },
   { box: 'left-[1rem] top-[1rem] portrait:top-[6.8rem]', right: false },
   { box: 'right-[1rem] top-[1rem] portrait:top-[6.8rem]', right: true },
-  { box: 'right-[1rem] bottom-[1rem] portrait:bottom-[6.2rem]', right: true },
+  { box: 'right-[1rem] bottom-[1rem] portrait:bottom-[1.5rem]', right: true },
 ]
 
 function TimerRing({ deadline, color }: { deadline: TurnDeadline; color: string }) {
@@ -36,6 +40,49 @@ function TimerRing({ deadline, color }: { deadline: TurnDeadline; color: string 
         strokeDashoffset={length * (1 - remaining)}
       />
     </svg>
+  )
+}
+
+const CARD_ICON = { ESCAPE_ISLAND: '🏝️', SHIELD: '🛡️', DISCOUNT: '🏷️' } as const
+
+/** Tài sản đang có: một ô màu cho mỗi đất (số nhà / ★ Landmark) và các thẻ Cơ Hội đang giữ. Bấm đất để xem chi tiết. */
+function AssetStrip({ player, right }: { player: PlayerView; right: boolean }) {
+  const tiles = useAnimationStore((s) => s.view?.tiles)
+  const selectTile = useUiStore((s) => s.selectTile)
+  const owned = (tiles ?? []).flatMap((t, i) => (t.owner === player.id ? [{ index: i, level: t.level }] : []))
+  const cards = [...player.heldCards, ...(player.rentDiscount ? (['DISCOUNT'] as const) : [])]
+  if (player.bankrupt || (owned.length === 0 && cards.length === 0)) return null
+  return (
+    <div
+      className={`pointer-events-auto mt-[0.3rem] flex max-w-[13.5rem] flex-wrap gap-[0.2rem] rounded-lg bg-white/75 p-[0.25rem] shadow-sm ${right ? 'justify-end' : ''}`}
+    >
+      {owned.map(({ index, level }) => {
+        const def = BOARD[index]
+        const color = def.group ? (COLOR_GROUPS.find((g) => g.id === def.group)?.color ?? '#999') : RESORT_COLOR
+        const maxed = def.kind === 'CITY' && level >= 4
+        return (
+          <button
+            key={index}
+            title={`${def.name}${def.kind === 'CITY' ? (maxed ? ' · Landmark' : level > 0 ? ` · ${level} nhà` : ' · đất trống') : ''}`}
+            aria-label={def.name}
+            onClick={() => selectTile(index)}
+            className="flex h-[1.35rem] w-[1.35rem] items-center justify-center rounded-[0.35rem] border-[0.12rem] border-white text-[0.75rem] leading-none font-extrabold text-white shadow-sm"
+            style={{ background: color, textShadow: '0 0.06em 0 rgb(0 0 0 / 0.3)' }}
+          >
+            {maxed ? '★' : level > 0 ? level : ''}
+          </button>
+        )
+      })}
+      {cards.map((card, i) => (
+        <span
+          key={`${card}-${i}`}
+          title={CARDS[card].name}
+          className="flex h-[1.35rem] w-[1.35rem] items-center justify-center rounded-full bg-amber-100 text-[0.8rem] leading-none shadow-sm ring-1 ring-amber-300"
+        >
+          {CARD_ICON[card]}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -154,6 +201,7 @@ export function PlayerPanel({
         >
           {player.name}
         </div>
+        <AssetStrip player={player} right={corner.right} />
       </div>
     </div>
   )

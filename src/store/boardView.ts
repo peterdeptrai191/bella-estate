@@ -5,7 +5,7 @@
  * nên quân cờ/tiền/nhà trên màn hình khớp với animation. Hàm ở đây là thuần (có test):
  * phát lại toàn bộ event phải cho ra đúng view suy từ state cuối của game-core.
  */
-import type { GameEvent, GameState, PlayerId } from '../game-core'
+import type { GameEvent, GameState, HoldableCardId, PlayerId } from '../game-core'
 
 export interface PlayerView {
   id: PlayerId
@@ -15,6 +15,10 @@ export interface PlayerView {
   money: number
   position: number
   bankrupt: boolean
+  /** Thẻ Cơ Hội đang giữ (Ra Đảo, Lá Chắn). */
+  heldCards: HoldableCardId[]
+  /** Đang có thẻ Giảm Giá chờ dùng ở lần trả thuê tới. */
+  rentDiscount: boolean
 }
 
 export interface TileView {
@@ -40,6 +44,8 @@ export function viewFromGame(state: GameState): BoardView {
       money: p.money,
       position: p.position,
       bankrupt: p.bankrupt,
+      heldCards: [...p.heldCards],
+      rentDiscount: p.rentDiscount,
     })),
     tiles: state.tiles.map((t) => ({ owner: t.owner, level: t.level })),
     festivalTile: state.festivalTile,
@@ -88,7 +94,26 @@ export function applyEventToView(view: BoardView, event: GameEvent): BoardView {
         level: event.level,
       })
     case 'RENT_PAID':
-      return addMoney(addMoney(view, event.from, -event.amount), event.to, event.amount)
+      // Trả thuê luôn dùng hết thẻ Giảm Giá (nếu có).
+      return updatePlayer(addMoney(addMoney(view, event.from, -event.amount), event.to, event.amount), event.from, (p) => ({
+        ...p,
+        rentDiscount: false,
+      }))
+    case 'DEBT_STARTED':
+      return event.reason === 'RENT' ? updatePlayer(view, event.playerId, (p) => ({ ...p, rentDiscount: false })) : view
+    case 'CARD_DRAWN':
+      if (event.card === 'ESCAPE_ISLAND' || event.card === 'SHIELD') {
+        const card = event.card
+        return updatePlayer(view, event.playerId, (p) => ({ ...p, heldCards: [...p.heldCards, card] }))
+      }
+      return event.card === 'DISCOUNT' ? updatePlayer(view, event.playerId, (p) => ({ ...p, rentDiscount: true })) : view
+    case 'CARD_USED': {
+      const card = event.card
+      return updatePlayer(view, event.playerId, (p) => {
+        const at = p.heldCards.indexOf(card)
+        return at < 0 ? p : { ...p, heldCards: p.heldCards.filter((_, i) => i !== at) }
+      })
+    }
     case 'BOUGHT_OUT': {
       const paid = addMoney(addMoney(view, event.playerId, -event.price), event.from, event.price)
       return setTile(paid, event.tileIndex, { ...paid.tiles[event.tileIndex], owner: event.playerId })
@@ -104,7 +129,7 @@ export function applyEventToView(view: BoardView, event: GameEvent): BoardView {
     case 'PROPERTY_SOLD':
       return releaseTile(addMoney(view, event.playerId, event.amount), event.tileIndex)
     case 'BANKRUPT': {
-      let next = updatePlayer(view, event.playerId, (p) => ({ ...p, money: 0, bankrupt: true }))
+      let next = updatePlayer(view, event.playerId, (p) => ({ ...p, money: 0, bankrupt: true, heldCards: [], rentDiscount: false }))
       for (const i of event.releasedTiles) next = releaseTile(next, i)
       return next
     }

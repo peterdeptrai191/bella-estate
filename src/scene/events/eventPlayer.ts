@@ -93,14 +93,17 @@ export async function playEvent(event: GameEvent): Promise<void> {
   const a = visual().animation
   switch (event.type) {
     case 'TURN_STARTED':
+      useUiStore.setState({ diceShown: null, targetTile: null })
       apply(event)
       playSound('turnStart')
       if (isLocal(event.playerId)) banner('Lượt của bạn!', 'info')
       await wait(a.turnPause)
       return
     case 'DICE_ROLLED':
+      useUiStore.setState({ diceShown: null, targetTile: null })
       await rollDice(event.dice)
       apply(event)
+      useUiStore.setState({ diceShown: { dice: event.dice, total: event.dice[0] + event.dice[1] } })
       if (event.isDouble) banner('ĐÔI!', 'double')
       return
     case 'EXTRA_ROLL':
@@ -109,6 +112,8 @@ export async function playEvent(event: GameEvent): Promise<void> {
       await wait(a.turnPause)
       return
     case 'PLAYER_MOVED':
+      // Viền vàng ô sẽ dừng ngay khi quân bắt đầu đi.
+      useUiStore.setState({ targetTile: event.to })
       await movePiece(event)
       return
     case 'PASSED_START':

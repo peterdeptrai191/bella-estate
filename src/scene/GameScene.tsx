@@ -5,6 +5,9 @@ import { useVisual } from '../store/visualStore'
 import { Board } from './Board'
 import { CameraRig } from './CameraRig'
 import { ViewGestures } from './ViewGestures'
+import { TargetFrame } from './TargetFrame'
+import { DiceTotal } from './DiceTotal'
+import { BoardCenterTracker } from './BoardCenterTracker'
 import { wasDragged } from '../store/viewControl'
 import { Dice } from './Dice'
 import { Effects } from './Effects'
@@ -40,7 +43,10 @@ export function GameScene() {
       <ViewGestures />
       <Lights />
       <Board />
+      <TargetFrame />
       <Dice />
+      <DiceTotal />
+      <BoardCenterTracker />
       <Pieces />
       <TileTags />
       <Suspense fallback={null}>
